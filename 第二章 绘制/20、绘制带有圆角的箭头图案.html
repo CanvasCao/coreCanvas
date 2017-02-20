@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+
+        }
+
+        body {
+            background: #ddd;
+        }
+
+        #canvas {
+            margin: 10px;
+            background: #fff;
+            border: thin inset #aaa;
+        }
+    </style>
+    <script>
+        onload = function () {
+            //此代码烂尾
+            function windowToCanvas(canvas, clientX, clientY) {
+                var boundingRect = canvas.getBoundingClientRect();
+//                console.log(boundingRect);
+                //canvas画布的boundingRect边界矩形有六个属性
+                //height: 322 canvas画布的高
+                //width: 622 canvas画布的宽
+                //top: 30 基于整个window的顶边的位置
+                //bottom: 352 基于整个window的底边的位置
+                //left: 10 基于整个window的左边的位置
+                //right: 632 基于整个window的右边的位置
+
+
+                //P19 书上绝壁有错误
+                return {
+                    //鼠标的x-boundingRect的x
+                    x: (clientX - boundingRect.left) / (boundingRect.width / canvas.width), //boundingRect.width/canvas.width就是放大的倍数
+                    y: (clientY - boundingRect.top) / (boundingRect.height / canvas.height)
+                }
+
+            }
+
+            var canvas = document.getElementById('canvas');
+            var context = canvas.getContext('2d');//d必须小写
+            var h=canvas.height;
+            var w=canvas.width;
+
+            var ARROW_MARGIN = 30;
+
+            //只是图上显示点的半径
+            var POINT_RADIUS = 7;
+
+            //图上六个点 不知道怎么算出来的
+            //结论：这六个点算的根本不对
+            points = [
+                {
+                    x: w - ARROW_MARGIN,
+                    y: h - ARROW_MARGIN
+                },
+
+                {
+                    x: w - ARROW_MARGIN * 2,
+                    y: h - ARROW_MARGIN
+                },
+
+                {
+                    x: POINT_RADIUS,
+                    y: h / 2
+                },
+
+                {
+                    x: ARROW_MARGIN,
+                    y: h/ 2 - ARROW_MARGIN
+                },
+
+                {
+                    x: w - ARROW_MARGIN,
+                    y: ARROW_MARGIN
+                },
+
+                {
+                    x: w - ARROW_MARGIN,
+                    y: ARROW_MARGIN * 2
+                },
+            ];
+
+            //Functions....................................
+            //只是画图上显示的点
+            function drawPoint(x, y) {
+                context.beginPath();
+                context.lineWidth = 0.5;
+                context.arc(x, y, POINT_RADIUS, 0, Math.PI * 2, false);
+                context.fill();
+                context.stroke();
+            }
+
+            //画六个点会调用上面的函数
+            function drawBezierPoints() {
+                for (i = 0; i < points.length; i++) {
+                    drawPoint(points[i].x, points[i].y);
+                }
+            }
+
+            //画箭头 前面的破贝塞尔点不画也没关系
+            function drawArrow() {
+                context.strokeStyle = 'white';
+                context.fillStyle = 'blue';
+
+
+            }
+
+//            drawPoint(points[0].x,points[0].y)
+//            drawPoint(points[1].x,points[1].y)
+        }
+    </script>
+</head>
+<body>
+<canvas id='canvas' width='600' height='300'>
+    Canvas not supported!
+</canvas>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        *{
+            padding: 0;
+            margin: 0;
+
+        }
+        body{
+            background:#ddd;
+        }
+        #canvas{
+            margin:10px;
+            background:#fff;
+            border:thin inset #aaa;
+        }
+    </style>
+    <script>
+        //这段代码不仅将线段绘制在了一个像素之间，并且宽度只有0.5像素
+        onload=function(){
+            var canvas=document.getElementById('canvas');
+            var context=canvas.getContext('2d');//d必须小写
+
+            //明显感觉到这次画的网格线很实
+            function drawSolidGrid(step) {
+                context.strokeStyle = 'lightgray';
+                context.lineWidth = 0.5;
+                for (var i = step+0.5; i < canvas.width; i += step) {
+                    context.beginPath();
+                    context.moveTo(i, 0);
+                    context.lineTo(i, canvas.height);
+                    context.stroke();
+                }
+                for (var i = step+0.5; i < canvas.height; i += step) {
+                    context.beginPath();
+                    context.moveTo(0, i);
+                    context.lineTo(canvas.width, i);
+                    context.stroke();
+                }
+
+            }
+            drawSolidGrid(10);
+
+
+        }
+    </script>
+</head>
+<body>
+<canvas id='canvas' width='600' height='300'>
+    Canvas not supported!
+</canvas>
+</body>
+</html>

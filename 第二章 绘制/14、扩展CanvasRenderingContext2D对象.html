@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        *{
+            padding: 0;
+            margin: 0;
+
+        }
+        body{
+            background:#ddd;
+        }
+        #canvas{
+            margin:10px;
+            background:#fff;
+            border:thin inset #aaa;
+        }
+    </style>
+    <script>
+        onload=function(){
+            var canvas=document.getElementById('canvas');
+            var context=canvas.getContext('2d');//d必须小写
+
+            var moveToFunction=CanvasRenderingContext2D.prototype.moveTo;
+
+            //先得让它变成对象，这里写错过
+            CanvasRenderingContext2D.prototype.lastMoveToLocation={};
+            CanvasRenderingContext2D.prototype.moveTo=function(x,y){
+                moveToFunction.call(context,x,y);
+//                console.log(this)
+                this.lastMoveToLocation.x=x;
+                this.lastMoveToLocation.y=y;
+            }
+
+            CanvasRenderingContext2D.prototype.dashedLineTo=function(x,y,dashLength){
+                dashLength=dashLength===undefined?5:dashLength;
+
+                var startX=this.lastMoveToLocation.x;
+                var startY=this.lastMoveToLocation.y;
+                var deltaX=x-startX;
+                var deltaY=y-startY;
+
+                //虚线的数量其实就是勾股定理求出斜边长度再除以单条虚线的长度
+                var dashNum=Math.floor(Math.sqrt(deltaX*deltaX+deltaY*deltaY)/dashLength);
+
+                for(var i=0;i<dashNum;i++){
+                    context[i%2===0?'moveTo':'lineTo'](startX+(deltaX/dashNum)*i,startY+(deltaY/dashNum)*i)
+                    //x1是起始位置 deltaX/dashNum单根虚线的在x轴的长度 乘以i就是总长度
+                }
+            }
+
+            context.moveTo(10,10);
+            context.dashedLineTo(52,55);
+            context.stroke();
+
+        }
+    </script>
+</head>
+<body>
+<canvas id='canvas' width='600' height='300'>
+    Canvas not supported!
+</canvas>
+</body>
+</html>

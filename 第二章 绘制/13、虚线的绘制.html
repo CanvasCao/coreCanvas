@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        *{
+            padding: 0;
+            margin: 0;
+
+        }
+        body{
+            background:#ddd;
+        }
+        #canvas{
+            margin:10px;
+            background:#fff;
+            border:thin inset #aaa;
+        }
+    </style>
+    <script>
+        onload=function(){
+            var canvas=document.getElementById('canvas');
+            var context=canvas.getContext('2d');//d必须小写
+            var h=canvas.height;
+            var w=canvas.width;
+
+            function drawDashedLine(x1,y1,x2,y2,dashLength){
+                dashLength=dashLength===undefined?5:dashLength;
+
+                var deltaX=x2-x1;
+                var deltaY=y2-y1;
+
+                //虚线的数量其实就是勾股定理求出斜边长度再除以单条虚线的长度
+                var dashNum=Math.floor(Math.sqrt(deltaX*deltaX+deltaY*deltaY)/dashLength);
+
+                for(var i=0;i<dashNum;i++){
+                    context[i%2===0?'moveTo':'lineTo'](x1+(deltaX/dashNum)*i,y1+(deltaY/dashNum)*i)
+                    //x1是起始位置 deltaX/dashNum单根虚线的在x轴的长度 乘以i就是总长度
+                }
+                context.stroke();
+            }
+
+            drawDashedLine(20,20,w-20,20);
+            drawDashedLine(w-20,20,w-20,h-20);
+        }
+    </script>
+</head>
+<body>
+<canvas id='canvas' width='600' height='300'>
+    Canvas not supported!
+</canvas>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        *{
+            padding: 0;
+            margin: 0;
+
+        }
+        body{
+            background:#ddd;
+        }
+        #canvas{
+            margin:10px;
+            background:#fff;
+            border:thin inset #aaa;
+        }
+    </style>
+    <script>
+        onload=function(){
+            var canvas=document.getElementById('canvas');
+            var context=canvas.getContext('2d');//d必须小写
+
+            //传五个参数分别是左上角的坐标位置x，y 矩形的宽高w，h 半径r
+            //这五个数只能是正数
+
+            //arcTo也会将子路径的最后一个点与arcTo()方法所画的圆弧的起点连接起来
+            //这就是程序中并没有使用lineTo()方法的原因
+            function drawRoundedRect(x,y,w,h,r){
+                context.beginPath();
+                context.moveTo(x+r,y);
+                context.arcTo(x+w,y,x+w,y+r,r);
+                context.arcTo(x+w,y+h,w-r,y+h,r);
+                context.arcTo(x,y+h,x,y+h-r,r);
+                context.arcTo(x,y,x+w,y,r);
+                context.fill();
+            }
+
+            drawRoundedRect(100,100,100,100,10)
+        }
+    </script>
+</head>
+<body>
+<canvas id='canvas' width='600' height='300'>
+    Canvas not supported!
+</canvas>
+</body>
+</html>

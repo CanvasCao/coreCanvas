@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+
+        }
+
+        body {
+            background: #ddd;
+        }
+
+        #canvas {
+            margin: 10px;
+            background: #fff;
+            border: thin inset #aaa;
+        }
+    </style>
+    <script>
+        onload = function () {
+            function windowToCanvas(canvas, clientX, clientY) {
+                var boundingRect = canvas.getBoundingClientRect();
+//                console.log(boundingRect);
+                //canvas画布的boundingRect边界矩形有六个属性
+                //height: 322 canvas画布的高
+                //width: 622 canvas画布的宽
+                //top: 30 基于整个window的顶边的位置
+                //bottom: 352 基于整个window的底边的位置
+                //left: 10 基于整个window的左边的位置
+                //right: 632 基于整个window的右边的位置
+
+
+                //P19 书上绝壁有错误
+                return {
+                    //鼠标的x-boundingRect的x
+                    x: (clientX - boundingRect.left) / (boundingRect.width / canvas.width), //boundingRect.width/canvas.width就是放大的倍数
+                    y: (clientY - boundingRect.top) / (boundingRect.height / canvas.height)
+                }
+
+            }
+
+            var canvas = document.getElementById('canvas');
+            var context = canvas.getContext('2d');//d必须小写
+
+            context.beginPath();
+            context.moveTo(20, 20);
+            context.lineTo(100, 20);
+            context.arcTo(150, 20, 150, 70, 50);
+            context.lineTo(150, 120);
+            context.stroke();
+//            context.fill();
+
+//            context.fillStyle='red';
+//
+//            context.beginPath();
+//            context.arc(100,20,3,0,Math.PI*2,true);
+//            context.fill();
+//
+//            context.beginPath();
+//            context.arc(140,20,3,0,Math.PI*2,true);
+//            context.fill();
+//
+//            context.beginPath();
+//            context.arc(150,70,3,0,Math.PI*2,true);
+//            context.fill();
+        }
+    </script>
+</head>
+<body>
+<canvas id='canvas' width='600' height='300'>
+    Canvas not supported!
+</canvas>
+</body>
+</html>

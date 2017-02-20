@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+
+        }
+
+        body {
+            background: #ddd;
+        }
+
+        #canvas {
+            margin: 10px;
+            background: #fff;
+            border: thin inset #aaa;
+        }
+    </style>
+    <script>
+        onload = function () {
+            function windowToCanvas(canvas, clientX, clientY) {
+                var boundingRect = canvas.getBoundingClientRect();
+//                console.log(boundingRect);
+                //canvas画布的boundingRect边界矩形有六个属性
+                //height: 322 canvas画布的高
+                //width: 622 canvas画布的宽
+                //top: 30 基于整个window的顶边的位置
+                //bottom: 352 基于整个window的底边的位置
+                //left: 10 基于整个window的左边的位置
+                //right: 632 基于整个window的右边的位置
+
+
+                //P19 书上绝壁有错误
+                return {
+                    //鼠标的x-boundingRect的x
+                    x: (clientX - boundingRect.left) / (boundingRect.width / canvas.width), //boundingRect.width/canvas.width就是放大的倍数
+                    y: (clientY - boundingRect.top) / (boundingRect.height / canvas.height)
+                }
+
+            }
+
+            var canvas = document.getElementById('canvas');
+            var context = canvas.getContext('2d');//d必须小写
+            var h = canvas.height;
+            var w = canvas.width;
+
+            function drawGrid(step) {
+                context.strokeStyle = 'lightgray';
+                context.lineWidth = 0.5;
+                for (var i = step; i < w; i += step) {
+                    context.beginPath();
+                    context.moveTo(i, 0);
+                    context.lineTo(i, h);
+                    context.stroke();
+                }
+                for (var i = step; i < h; i += step) {
+                    context.beginPath();
+                    context.moveTo(0, i);
+                    context.lineTo(w, i);
+                    context.stroke();
+                }
+
+            }
+
+            drawGrid(10);
+
+
+            //总得有一个ccw的矩形，所以我们得自己写方法
+            function myRect(x, y, w, h, dir) { //dir分为cw ccw
+                if (dir == 'cw') {
+                    context.moveTo(x, y);
+                    context.lineTo(x + w, y);
+                    context.lineTo(x + w, y + h);
+                    context.lineTo(x, y + h);
+                }
+                else {
+                    context.moveTo(x, y);
+                    context.lineTo(x, y + h);
+                    context.lineTo(x + w, y + h);
+                    context.lineTo(x + w, y);
+                }
+                context.closePath();
+            }
+
+            //外部矩形的创建
+            function addOuterRectanglePath() {
+                context.rect(110, 25, 370, 335);
+            }
+
+            //内部矩形的创建
+            function addRectanglePath() {
+                myRect(310, 55, 70, 35, 'ccw')
+            }
+
+            //内部三角形 逆时针
+            function addTrianglePath() {
+                context.moveTo(400, 200);
+                context.lineTo(250, 115);
+                context.lineTo(200, 200);
+                context.closePath();
+            }
+
+            //内部圆形
+            function addCirclePath() {
+                context.arc(300, 300, 40, 0, Math.PI * 2, true);
+            }
+
+
+            //start...............................
+            //填充
+            context.fillStyle = 'goldenrod';
+            context.shadowColor='rgba(200,200,0,0.5)';
+            context.shadowOffsetX=12;
+            context.shadowOffsetY=12;
+            context.shadowBlur=15;
+            //这里其实在不停的画看不出的线
+            context.beginPath();
+            addOuterRectanglePath(); //cw clockwise
+
+            addRectanglePath(); //ccw counter clockwise
+            addTrianglePath(); //ccw counter clockwise
+            addCirclePath(); //ccw counter clockwise
+            context.fill();
+
+
+            //描边
+//            context.lineWidth=2;
+//            context.strokeStyle='rgba(0,0,0,0.7)';
+//            context.beginPath();
+//            addOuterRectanglePath(); //cw clockwise
+//            context.stroke();
+//            context.beginPath();
+//            addCirclePath(); //ccw counter clockwise
+//            addRectanglePath(); //ccw counter clockwise
+//            addTrianglePath();
+//            context.stroke();
+
+        }
+    </script>
+</head>
+<body>
+<canvas id='canvas' width='600' height='400'>
+    Canvas not supported!
+</canvas>
+</body>
+</html>

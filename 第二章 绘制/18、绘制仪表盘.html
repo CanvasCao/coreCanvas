@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+
+        body {
+            background: #ddd;
+        }
+
+        #canvas {
+            margin: 10px;
+            background: #fff;
+            border: thin inset #aaa;
+            -webkit-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+            -moz-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+            box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+    <script>
+        onload = function () {
+            var canvas = document.getElementById('canvas');
+            var context = canvas.getContext('2d');//
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+
+            var h = canvas.height;
+            var w = canvas.width;
+
+
+            var ring_innerRadius = 35; //表盘的内外边框
+            var ring_outerRadius = 55;
+
+            var tick_width = 10;
+            var tick_strokeStyle = 'rgba(100,140,230,0.9)';//刻度
+
+            //半径r 规定了整个圆的大小(也就是程序中从外向内数的第三个圆) 所有其他值都会根据r的变化而变化
+            //x，y规定了这个圆的圆心
+            var circle = {x: w / 2, y: h / 2, r: 150};
+
+            //画网格
+            function drawSolidGrid(step) {
+                context.save();
+                context.strokeStyle = 'lightgray';
+                context.lineWidth = 0.5;
+                for (var i = step + 0.5; i < canvas.width; i += step) {
+                    context.beginPath();
+                    context.moveTo(i, 0);
+                    context.lineTo(i, canvas.height);
+                    context.stroke();
+                }
+                for (var i = step + 0.5; i < canvas.height; i += step) {
+                    context.beginPath();
+                    context.moveTo(0, i);
+                    context.lineTo(canvas.width, i);
+                    context.stroke();
+                }
+                context.restore();
+            }
+
+            drawSolidGrid(10);
+
+            //画中间的圆 书中叫做图心
+            function drawCentroid() {
+                context.save();
+                context.beginPath();
+                var centroid_radius = 10;//图心半径 图中间有一个小圆的
+                context.fillStyle = 'rgba(80,190,240,0.5)';
+                context.strokeStyle = 'rgba(0,0,0,0.5)';
+                context.arc(circle.x, circle.y, centroid_radius, 0, Math.PI * 2, true);
+                context.stroke();
+                context.fill();
+                context.restore();
+            }
+
+            //画由中心发射出来指向刻度的引导线
+            function drawGuidewire() {
+                var guidewireRadius = circle.r + ring_outerRadius;
+                //书中默认指向45度 而且书中需要传入x，y也就是圆心的位置 可是我圆心的位置本来就知道
+                var angle = -Math.PI / 4;
+
+                //这里的加减sin还是cos很有问题 所以以后如果函数需要传参的时候 应该要重写
+                var endLocation = {
+                    x: circle.x - Math.sin(angle) * guidewireRadius,
+                    y: circle.y - Math.cos(angle) * guidewireRadius
+                };
+                //引导线
+                context.save();
+                context.beginPath();
+                context.strokeStyle = 'goldenrod';
+                context.moveTo(circle.x, circle.y);
+                context.lineTo(endLocation.x, endLocation.y);
+                context.stroke();
+                context.restore();
+
+                //刻度上方便读数的小黄圆
+                context.save();
+                context.beginPath();
+                context.fillStyle = 'rgba(250,250,0,0.5)';
+                context.strokeStyle = 'rgba(0,0,0,0.5)';
+                context.arc(endLocation.x, endLocation.y, 5, 0, Math.PI * 2, true);
+                context.stroke();
+                context.fill();
+                context.restore();
+
+            }
+
+
+            //画外面的蓝色圆环 利用非零环绕原则
+            function drawRing() {
+                context.save();
+                context.beginPath();
+                context.fillStyle = 'rgba(100, 140, 230, 0.1)';
+                context.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                context.arc(circle.x, circle.y,
+                        circle.r + ring_innerRadius,
+                        0, Math.PI * 2, false);
+                context.arc(circle.x, circle.y,
+                        circle.r + ring_outerRadius,
+                        0, Math.PI * 2, true);
+
+                context.shadowColor = 'rgba(0, 0, 0, 0.7)';
+                context.shadowOffsetX = 3;
+                context.shadowOffsetY = 3;
+                context.shadowBlur = 6;
+
+                context.stroke();
+                context.fill();
+                context.restore();
+            }
+
+            //画刻度 刻度是一长一短的 长的是tick_width 短的是tick_width/2
+            function drawTicks() {
+                var angle_max = Math.PI * 2;
+                var angle_delta = angle_max / 128;
+                for (var angle = 0, count = 0; angle < angle_max; angle += angle_delta, count++) {
+                    drawTick(angle, count);
+                }
+
+                function drawTick(angle, count) {
+                    var nowTickWidth = count % 2 === 0 ? tick_width : tick_width / 2;
+
+                    //总之r1 r2之间差一根读数的长度
+                    //一根读数其实也是半径的一小部分
+                    var r1 = circle.r + ring_innerRadius;
+                    var r2 = circle.r + ring_innerRadius - nowTickWidth;
+
+                    context.save();
+                    context.beginPath();
+
+
+                    context.moveTo(circle.x + Math.cos(angle) * r2,
+                            circle.y + Math.sin(angle) * r2);
+                    context.lineTo(circle.x + Math.cos(angle) * r1,
+                            circle.y + Math.sin(angle) * r1);
+
+                    context.strokeStyle = tick_strokeStyle;
+                    context.stroke();
+                    context.restore();
+                }
+            }
+
+            //画读数
+            function drawAnnotations() {
+                var r = circle.r + ring_innerRadius - tick_width * 2;
+                context.save();
+                context.fillStyle = 'rgba(0,0,230,0.9)';//注释就是表盘上的读数
+                context.font = '12px 黑体';
+
+                for (var angle = 0; angle < Math.PI * 2; angle += Math.PI * 2 / 16) {
+                    context.fillText(
+                            parseInt(radToDegree(angle)),
+                            circle.x + Math.cos(angle) * r,
+                            circle.y - Math.sin(angle) * r)
+                }
+
+                context.restore();
+
+
+                function radToDegree(rad) {
+                    var degree = rad / Math.PI * 180;
+                    return degree;
+                }
+            }
+
+            //画仪表盘
+            function drawDial() {
+                drawCentroid();
+                drawGuidewire();
+                drawRing();
+                drawTicks();
+                drawAnnotations();
+            }
+
+            drawDial();
+        }
+    </script>
+</head>
+<body>
+<canvas id='canvas' width='650' height='450'>
+    Canvas not supported!
+</canvas>
+</body>
+</html>

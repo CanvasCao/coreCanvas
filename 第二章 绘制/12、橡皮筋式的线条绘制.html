@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+
+        }
+
+        body {
+            background: #ddd;
+        }
+
+        #canvas {
+            margin: 10px;
+            background: #fff;
+            border: thin inset #aaa;
+            -webkit-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+            -moz-box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+            box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        #controls {
+            margin: 10px;
+        }
+
+        #rubberbandDiv {
+            position: absolute;
+            border: 1px inset blue;
+            cursor: crosshair;
+            display: none;
+        }
+    </style>
+    <script>
+        onload = function () {
+            function windowToCanvas(canvas, clientX, clientY) {
+                var boundingRect = canvas.getBoundingClientRect();
+//                console.log(boundingRect);
+                //canvas画布的boundingRect边界矩形有六个属性
+                //height: 322 canvas画布的高
+                //width: 622 canvas画布的宽
+                //top: 30 基于整个window的顶边的位置
+                //bottom: 352 基于整个window的底边的位置
+                //left: 10 基于整个window的左边的位置
+                //right: 632 基于整个window的右边的位置
+
+
+                //P19 书上绝壁有错误
+                return {
+                    //鼠标的x-boundingRect的x
+                    x: (clientX - boundingRect.left) / (boundingRect.width / canvas.width), //boundingRect.width/canvas.width就是放大的倍数
+                    y: (clientY - boundingRect.top) / (boundingRect.height / canvas.height)
+                }
+
+            }
+
+            var canvas = document.getElementById('canvas');
+            var h = canvas.height;
+            var w = canvas.width;
+            var context = canvas.getContext('2d');//d必须小写
+            var strokeStyleSelect = document.getElementById('strokeStyleSelect');
+            var guidewiresCheckbox = document.getElementById('guidewiresCheckbox');
+            var eraseBtn = document.getElementById('eraseBtn');
+            var rubberbandDiv = document.getElementById('rubberbandDiv');//画图的时候跟着一起移动的矩形篮框
+            var drawingSurfaceImageData;//保存的绘画表面
+            var mouseDown = {x: 0, y: 0};//鼠标相对于window的位置
+            var mouseDownCanvas={x: 0, y: 0};//鼠标相对于canvas的位置
+            var rubberbandRect = {top: 0, left: 0, width: 0, height: 0};
+            var ifDragging = false;
+            var ifGuidewire = guidewiresCheckbox.checked;
+
+            //画网格
+            function drawSolidGrid(step) {
+                context.save();
+                context.strokeStyle = 'lightgray';
+                context.lineWidth = 0.5;
+                for (var i = step + 0.5; i < canvas.width; i += step) {
+                    context.beginPath();
+                    context.moveTo(i, 0);
+                    context.lineTo(i, canvas.height);
+                    context.stroke();
+                }
+                for (var i = step + 0.5; i < canvas.height; i += step) {
+                    context.beginPath();
+                    context.moveTo(0, i);
+                    context.lineTo(canvas.width, i);
+                    context.stroke();
+                }
+                context.restore();
+            }
+            drawSolidGrid(10);
+
+            //初始化描边线颜色
+            context.strokeStyle = strokeStyleSelect.value;
+
+            //保存和恢复绘画表面
+            function saveDrawingSurface() {
+                drawingSurfaceImageData = context.getImageData(0, 0, w, h);
+            }
+
+            function restoreDrawingSurface() {
+                context.putImageData(drawingSurfaceImageData, 0, 0);
+            }
+
+            //画辅助线xy
+            function drawGuidewires(x, y) {
+                context.save();
+                context.strokeStyle = 'rgba(0,0,230,0.4)';
+                context.lineWidth = 0.5;
+                drawHorizontalLine(y);
+                drawVerticalLine(x);
+                context.restore();
+
+
+                function drawHorizontalLine(y) {
+                    context.beginPath();
+                    context.moveTo(0, y);
+                    context.lineTo(w, y);
+                    context.stroke();
+                }
+
+                function drawVerticalLine(x) {
+                    context.beginPath();
+                    context.moveTo(x, 0);
+                    context.lineTo(x, h);
+                    context.stroke();
+                }
+            }
+
+
+            //画出当前操作我需要的那根线
+            function drawThisTimeLine(x,y) {
+                context.beginPath();
+                context.moveTo(mouseDownCanvas.x, mouseDownCanvas.y)
+                context.lineTo(x,y);
+                context.stroke();
+            }
+
+
+            //canvas Event
+            canvas.onmousedown = function (e) {
+                e.preventDefault();
+                ifDragging = true;
+
+                //记录鼠标起始位置
+                mouseDown.x = e.clientX;
+                mouseDown.y = e.clientY;
+                //记录鼠标相对于canvas的位置
+                var loc=windowToCanvas(canvas, e.clientX, e.clientY);
+                mouseDownCanvas.x=loc.x;
+                mouseDownCanvas.y=loc.y;
+                //记录移动矩形框的起始位置
+                rubberbandRect.top = e.clientY;
+                rubberbandRect.left = e.clientX;
+
+                //保存表面用于onmousemove恢复，不然所有线会不断叠加
+                saveDrawingSurface()
+            }
+
+            window.onmousemove = function (e) {
+                e.preventDefault();
+                if (ifDragging) {
+                    //show
+                    rubberbandDiv.style.display = 'block';
+
+                    //不需要清除整个矩形，在动的这个是个div啊
+//                    context.clearRect(0, 0, w, h);
+                    //一更新橡皮筋对象
+                    //更新橡皮筋对象之前需要做一部验收防止选择框超出画布范围
+                    var boundingClientRect = canvas.getBoundingClientRect();
+                    var correctedLeft = e.clientX;
+                    var correctedTop = e.clientY;
+
+                    correctedLeft = e.clientX < boundingClientRect.left ? boundingClientRect.left : correctedLeft;
+                    correctedLeft = e.clientX > boundingClientRect.left + boundingClientRect.width ? boundingClientRect.left + boundingClientRect.width : correctedLeft;
+
+                    correctedTop = e.clientY < boundingClientRect.top ? boundingClientRect.top : correctedTop;
+                    correctedTop = e.clientY > boundingClientRect.top + boundingClientRect.height ? boundingClientRect.top + boundingClientRect.height : correctedTop;
+
+
+                    rubberbandRect.left = mouseDown.x < correctedLeft ? mouseDown.x : correctedLeft;
+                    rubberbandRect.top = mouseDown.y < correctedTop ? mouseDown.y : correctedTop;
+                    rubberbandRect.width = Math.abs(correctedLeft - mouseDown.x);
+                    rubberbandRect.height = Math.abs(correctedTop - mouseDown.y);
+
+                    //二更新橡皮筋div
+                    //这一步只是加四个px 感觉还有其他的写法但我还不知道
+                    rubberbandDiv.style.left = rubberbandRect.left + 'px';
+                    rubberbandDiv.style.top = rubberbandRect.top + 'px';
+                    rubberbandDiv.style.width = rubberbandRect.width + 'px';
+                    rubberbandDiv.style.height = rubberbandRect.height + 'px';
+
+
+
+                    //恢复鼠标点击下的表面很重要！！！
+                    restoreDrawingSurface()
+                    //当前鼠标在canvas的位置
+                    var loc = windowToCanvas(canvas, e.clientX, e.clientY);
+                    if (ifGuidewire) {
+                        drawGuidewires(loc.x, loc.y);
+                    }
+                    drawThisTimeLine(loc.x,loc.y);
+                }
+
+
+            }
+
+            window.onmouseup = function (e) {
+                e.preventDefault();
+
+                if(ifDragging){
+                    //当前鼠标在canvas的位置
+                    var loc = windowToCanvas(canvas, e.clientX, e.clientY);
+
+                    restoreDrawingSurface();
+                    //再画出刚才的那根线
+                    drawThisTimeLine(loc.x,loc.y);
+
+
+                    rubberbandDiv.style.width = 0;
+                    rubberbandDiv.style.height = 0;
+                    rubberbandRect = {top: 0, left: 0, width: 0, height: 0};//reset
+                    rubberbandDiv.style.display = 'none';
+                    ifDragging = false;
+
+                }
+
+            }
+
+
+            //Event...........................................
+            eraseBtn.onclick = function () {
+                context.clearRect(0, 0, w, h);
+                drawSolidGrid(10);
+                //为什么要saveDrawingSurface()
+            }
+            strokeStyleSelect.onchange = function () {
+                context.strokeStyle = strokeStyleSelect.value;
+            }
+            guidewiresCheckbox.onchange = function () {
+                ifGuidewire = guidewiresCheckbox.checked;
+            }
+
+
+        }
+    </script>
+</head>
+<body>
+<div id='controls'>
+    Stroke Color: <select name="" id="strokeStyleSelect">
+    <option value="red">red</option>
+    <option value="green">green</option>
+    <option value="blue">blue</option>
+</select>
+    Guidewires:
+    <input type="checkbox" name="" id="guidewiresCheckbox" checked/>
+    <input type="button" value="Erase all" id="eraseBtn"/>
+</div>
+<div id='rubberbandDiv'></div>
+<canvas id='canvas' width='600' height='300'>
+    Canvas not supported!
+</canvas>
+</body>
+</html>

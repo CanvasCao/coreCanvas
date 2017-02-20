@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+
+        }
+
+        body {
+            background: #ddd;
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        #img{
+            margin: 10px;
+            position: absolute;
+            border: thin inset #aaa;
+        }
+    </style>
+    <script>
+        onload = function () {
+            var canvas = document.getElementById('canvas');
+            var context = canvas.getContext('2d');//d必须小写
+            var img = document.getElementById('img');
+            var loop;
+
+
+
+            var margin = 35;//画布是正方形，margin代表圆盘的边缘与画布边缘的距离
+            var clock_r = canvas.width / 2 - margin;
+            var num_spacing = 20;
+            var num_r = canvas.width / 2 - margin + num_spacing;
+
+            function degreeToRad(degree) {
+                var rad = degree * Math.PI / 180;
+                return rad;
+            }
+            function drawCircle() {
+                context.beginPath();//不close也行
+                context.arc(canvas.width / 2, canvas.height / 2, clock_r, 0, Math.PI * 2, true);
+                context.stroke();
+
+            }
+            function drawNumbers() {
+                var angle = degreeToRad(-60);
+
+                for (i = 1; i <= 12; i++) {
+                    var textWidth = context.measureText(i).width;
+                    var textHeight = 10;
+                    context.fillText(i, canvas.width / 2 + Math.cos(angle) * num_r - textWidth / 2, canvas.height / 2 + Math.sin(angle) * num_r + textHeight / 2);
+                    angle += degreeToRad(360 / 12);
+
+                }
+
+            }
+            function drawCenter() {
+                context.beginPath();//不close也行
+                context.arc(canvas.width / 2, canvas.height / 2, 5, 0, Math.PI * 2, true);
+                context.fill();
+            }
+            function drawhands() {
+                var date = new Date();
+                var sec = date.getSeconds();
+                var min = date.getMinutes();
+                var hour = date.getHours();
+                hour = hour > 12 ? hour - 12 : hour;
+
+                var angel = degreeToRad(sec * 6-90);
+                context.moveTo(canvas.width / 2, canvas.height / 2);
+                context.lineTo(canvas.width / 2 + Math.cos(angel) * clock_r, canvas.height / 2 + Math.sin(angel) * clock_r);
+                context.stroke();
+
+
+                var angel = degreeToRad(min * 6-90);
+                context.moveTo(canvas.width / 2, canvas.height / 2);
+                context.lineTo(canvas.width / 2 + Math.cos(angel) * clock_r * 0.8, canvas.height / 2 + Math.sin(angel) * clock_r * 0.8);
+                context.stroke();
+
+                var angel = degreeToRad(hour * 30-90);
+                context.moveTo(canvas.width / 2, canvas.height / 2);
+                context.lineTo(canvas.width / 2 + Math.cos(angel) * clock_r * 0.6, canvas.height / 2 + Math.sin(angel) * clock_r * 0.6);
+                context.stroke();
+
+            }
+            function drawClock() {
+                context.clearRect(0, 0, canvas.width, canvas.height);
+
+                context.save();
+                context.fillStyle = 'rgba(255,255,255,0.8)';
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                context.restore(); //save和restore的原因是！！！！！！！！！！画笔的颜色现在是背景灰色 直接画字字也是灰色 恢复默认字就是黑色了
+
+
+                drawCircle();
+                drawNumbers();
+                drawCenter();
+                drawhands();
+
+                var dataUrl=canvas.toDataURL(); //刚才canvas的截图地址
+                img.src=dataUrl;
+            }
+            loop = setInterval(drawClock, 1000);
+        }
+    </script>
+</head>
+<body>
+<img src="" alt="" id='img'  width='600' height='600'/>
+<canvas id='canvas' width='600' height='600'>
+    Canvas not supported!
+</canvas>
+</body>
+</html>

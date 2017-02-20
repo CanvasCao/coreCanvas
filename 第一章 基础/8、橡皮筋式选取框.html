@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+
+        }
+
+        body {
+            background: #ddd;
+        }
+
+        #canvas {
+            margin: 10px;
+            background: #fff;
+            border: thin inset #aaa;
+            cursor: crosshair;
+            padding: 0;
+        }
+
+        #controls {
+            margin: 20px;
+        }
+
+        /*我靠 就是选的时候的那个框*/
+        #rubberbandDiv {
+            position: absolute;
+            border: 3px inset blue;
+            cursor: crosshair;
+            display: none;
+        }
+    </style>
+    <script>
+        onload = function () {
+            function windowToCanvas(canvas, clientX, clientY) {
+                var boundingRect = canvas.getBoundingClientRect();
+//                console.log(boundingRect);
+                //canvas画布的boundingRect边界矩形有六个属性
+                //height: 322 canvas画布的高
+                //width: 622 canvas画布的宽
+                //top: 30 基于整个window的顶边的位置
+                //bottom: 352 基于整个window的底边的位置
+                //left: 10 基于整个window的左边的位置
+                //right: 632 基于整个window的右边的位置
+
+
+                //P19 书上绝壁有错误
+                return {
+                    //鼠标的x-boundingRect的x
+                    x: (clientX - boundingRect.left) / (boundingRect.width / canvas.width), //boundingRect.width/canvas.width就是放大的倍数
+                    y: (clientY - boundingRect.top) / (boundingRect.height / canvas.height)
+                }
+
+            }
+
+            var canvas = document.getElementById('canvas');
+            var context = canvas.getContext('2d');//d必须小写
+            var w = canvas.width;
+            var h = canvas.height;
+            var rubberbandDiv = document.getElementById('rubberbandDiv');
+            var resetBtn = document.getElementById('resetBtn');
+            var img = new Image();
+
+            //这个变量 只存储鼠标按下去以后x y的值
+            var mouseDown = {x: 0, y: 0};
+
+            //这个变量暂时存储了显示的小矩形的数值 而已！
+            var rubberbandRectangle = {top: 0, left: 0, width: 0, height: 0};
+
+            var dragging = false;
+
+            //Functions.........................................
+
+            //Events............................................
+            canvas.onmousedown = function (e) {
+                e.preventDefault();
+                dragging = true;
+
+                //move
+                mouseDown.x = e.clientX;
+                mouseDown.y = e.clientY;
+                rubberbandRectangle.top = e.clientY;
+                rubberbandRectangle.left = e.clientX;
+            }
+
+
+            //源码中有一点小bug 正确的做法应该是放大镜效果的验收
+            window.onmousemove = function (e) {
+                e.preventDefault();
+                if (dragging) {
+                    //show
+                    rubberbandDiv.style.display = 'block';
+
+                    //不需要清除整个矩形，在动的这个是个div啊
+//                    context.clearRect(0, 0, w, h);
+
+                    //一更新橡皮筋对象
+                    //更新橡皮筋对象之前需要做一部验收防止选择框超出画布范围
+                    var boundingClientRect = canvas.getBoundingClientRect();
+                    var correctedLeft = e.clientX;
+                    var correctedTop = e.clientY;
+
+                    correctedLeft = e.clientX < boundingClientRect.left ? boundingClientRect.left : correctedLeft;
+                    correctedLeft = e.clientX > boundingClientRect.left + boundingClientRect.width ? boundingClientRect.left + boundingClientRect.width : correctedLeft;
+
+                    correctedTop = e.clientY < boundingClientRect.top ? boundingClientRect.top : correctedTop;
+                    correctedTop = e.clientY > boundingClientRect.top + boundingClientRect.height ? boundingClientRect.top + boundingClientRect.height : correctedTop;
+
+
+                    rubberbandRectangle.left = mouseDown.x < correctedLeft ? mouseDown.x : correctedLeft;
+                    rubberbandRectangle.top = mouseDown.y < correctedTop ? mouseDown.y : correctedTop;
+                    rubberbandRectangle.width = Math.abs(correctedLeft - mouseDown.x);
+                    rubberbandRectangle.height = Math.abs(correctedTop - mouseDown.y);
+
+                    //二更新橡皮筋div
+                    //这一步只是加四个px 感觉还有其他的写法但我还不知道
+                    rubberbandDiv.style.left = rubberbandRectangle.left + 'px';
+                    rubberbandDiv.style.top = rubberbandRectangle.top + 'px';
+                    rubberbandDiv.style.width = rubberbandRectangle.width + 'px';
+                    rubberbandDiv.style.height = rubberbandRectangle.height + 'px';
+                }
+
+            }
+
+            //我操！！我来解释一下为什么！！！
+            //因为鼠标离开的时候鼠标在rubberbandDiv上 canvas接收不到鼠标离开事件 写window就肯定有了 草草草草
+            window.onmouseup = function (e) {
+                //console.log(1);
+
+                e.preventDefault();
+                var boundingClientRect = canvas.getBoundingClientRect();
+
+
+                //参数1 哪张图片  还可以传canvas 这个参数正是整个程序可以继续放大的核心参数
+                //参数23 截取这张图片的哪个位置 橡皮框相对于屏幕的位置-canvas相对于屏幕的位置=橡皮框相对于canvas的位置
+                //参数45 截取这张图片的宽高
+                //参数67 这张图放到画布的哪个位置
+                //参数89 这张图放到画布的宽高
+                context.drawImage(canvas,
+                        rubberbandRectangle.left - boundingClientRect.left,
+                        rubberbandRectangle.top - boundingClientRect.top,
+                        rubberbandRectangle.width,
+                        rubberbandRectangle.height,
+                        0, 0, w, h)
+
+                //rubberbandDiv.style.width = 0;
+                //rubberbandDiv.style.height = 0;
+                //rubberbandRectangle = {top: 0, left: 0, width: 0, height: 0};//reset
+                rubberbandDiv.style.display = 'none';
+                dragging = false;
+
+            }
+
+            resetBtn.onclick = function (e) {
+                context.clearRect(0, 0, w, h);
+                context.drawImage(img, 0, 0, w, h)
+
+            }
+            //Initialization ...................................
+            img.src = '../shared/img/waterfall.png';
+            img.onload = function () {
+                context.drawImage(img, 0, 0, w, h);
+            }
+
+        }
+    </script>
+</head>
+<body>
+<div id='controls'>
+    <button id='resetBtn'>Reset</button>
+</div>
+
+<div id='rubberbandDiv'></div>
+
+<canvas id='canvas' width='800' height='520'>
+    Canvas not supported!
+</canvas>
+</body>
+</html>

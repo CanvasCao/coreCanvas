@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+
+        }
+
+        body {
+            background: #ddd;
+        }
+
+        #canvas {
+            margin: 10px;
+            background: #fff;
+            border: thin solid #aaa;
+        }
+
+        #glassPane {
+            position: absolute;
+            left: 50px;
+            top: 50px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: thin solid rgba(0, 0, 0, 0.6);
+            color: #eee;
+            font-family: sans-serif;
+            font-size: 12px;
+            cursor: pointer;
+            -webkit-box-shadow: rgba(0, 0, 0, 0.5) 5px 5px 20px;
+            -moz-box-shadow: rgba(0, 0, 0, 0.5) 5px 5px 20px;
+            box-shadow: rgba(0, 0, 0, 0.5) 5px 5px 20px;
+            opacity: 0.6;
+        }
+
+        .title {
+            font-size: 2em;
+            color: rgba(255, 255, 0, 0.8)
+        }
+
+        #glassPane a:hover {
+            color: yellow;
+        }
+
+        #glassPane a {
+            text-decoration: none;
+            color: #ccc;
+            font-size: 3em;
+        }
+
+        #glassPane p {
+            margin: 10px;
+            color: rgba(65, 65, 220, 1);
+            font-size: 12pt;
+        }
+
+    </style>
+    <script>
+        //范例上的验收 哎哟卧槽！！！x+dx+r>w x+dx-r<0！！！
+        //        function adjustPosition(circle) {
+        //            if (circle.x + circle.velocityX + circle.radius > context.canvas.width ||
+        //                    circle.x + circle.velocityX - circle.radius < 0)
+        //                circle.velocityX = -circle.velocityX;
+        //
+        //            if (circle.y + circle.velocityY + circle.radius > context.canvas.height ||
+        //                    circle.y + circle.velocityY - circle.radius  < 0)
+        //                circle.velocityY= -circle.velocityY;
+        //
+        //            circle.x += circle.velocityX;
+        //            circle.y += circle.velocityY;
+        //        }
+
+        onload = function () {
+            var canvas = document.getElementById('canvas');
+            var context = canvas.getContext('2d');//d必须小写
+            var h = canvas.height;
+            var w = canvas.width;
+            var startBtn = document.getElementById('startBtn');
+            var glassPane = document.getElementById('glassPane');
+            var paused = true;
+
+            //Random....................................
+            function myRandom(begin, end) {
+                return Math.floor(Math.random() * (end - begin)) + begin;
+            }
+
+            //Classes....................................
+
+            function Ball() {
+                this.r = myRandom(10, 50);
+                this.x = myRandom(0 + this.r, w - this.r);
+                this.y = myRandom(0 + this.r, h - this.r);
+                this.color = 'rgb(' + parseInt(Math.random() * 255) + ', ' +
+                        parseInt(Math.random() * 255) + ', ' +
+                        parseInt(Math.random() * 255);
+                this.dx = myRandom(-5, 5);
+                this.dy = myRandom(-5, 5);
+            }
+
+            Ball.prototype = {
+                move: function () {
+                    //***注意这行是带有预判的验收
+                    if (this.y + this.dy + this.r > h || this.y + this.dy < this.r) {
+                        this.dy = this.dy * -1;
+                    } else if (this.x + this.dx + this.r > w || this.x + this.dx < this.r) {
+                        //撞到右边、撞到左边
+                        this.dx = this.dx * -1;
+                    }
+                    this.x += this.dx;
+                    this.y += this.dy;
+                    //到底是先验收还是先赋值？
+                },
+
+                render: function () {
+                    context.beginPath();
+                    context.arc(this.x, this.y, this.r, 0, Math.PI * 2, true);
+                    context.fillStyle = this.color;
+                    context.fill();
+                }
+            }
+
+            var ballArr = [];
+
+            for (i = 1; i <= 100; i++) {
+                ballArr.push(new Ball());
+            }
+            startBtn.onclick = function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                paused = !paused;
+                startBtn.innerHTML = paused ? 'Start' : "Stop";
+            }
+
+            glassPane.onmousedown = function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                //以免用户无意选中控件
+            }
+
+            canvas.onmousedown = function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            setInterval(function () {
+                if (!paused) {
+                    context.clearRect(0, 0, w, h);
+                    drawGrid(10);
+                    for (i = 0; i < ballArr.length; i++) {
+                        ballArr[i].move();
+                        ballArr[i].render();
+                    }
+                }
+            }, 1000 / 60)
+
+            function drawGrid(step) {
+                context.strokeStyle = 'lightgray';
+                context.lineWidth = 0.5;
+                for (var i = step; i < w; i += step) {
+                    context.beginPath();
+                    context.moveTo(i, 0);
+                    context.lineTo(i, h);
+                    context.stroke();
+                }
+                for (var i = step; i < h; i += step) {
+                    context.beginPath();
+                    context.moveTo(0, i);
+                    context.lineTo(w, i);
+                    context.stroke();
+                }
+            }
+
+        }
+    </script>
+</head>
+<body>
+<div id='glassPane'>
+    <h2 class='title'>Bouncing Balls</h2>
+
+    <p>One hundred balls bouncing</p>
+    <a href="" id=startBtn>Start</a>
+</div>
+<canvas id='canvas' width='750' height='500'>
+    Canvas not supported!
+</canvas>
+</body>
+</html>

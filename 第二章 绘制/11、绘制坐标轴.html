@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        *{
+            padding: 0;
+            margin: 0;
+
+        }
+        body{
+            background:#ddd;
+        }
+        #canvas{
+            margin:10px;
+            background:#fff;
+            border:thin inset #aaa;
+        }
+    </style>
+    <script>
+        onload=function(){
+            var canvas=document.getElementById('canvas');
+            var context=canvas.getContext('2d');//d必须小写
+            var w=canvas.width;
+            var h=canvas.height;
+
+            var axis_margin=40;//坐标轴外边距
+            var axis_orgin={x:axis_margin,y:h-axis_margin};//坐标轴原点
+            var axis_top=axis_margin;//y轴顶端距离画布顶端的距离
+            var axis_right=w-axis_margin;//x轴右端距离画布右端的距离
+            var axis_width=axis_right-axis_orgin.x;//坐标轴宽
+            var axis_height=axis_orgin.y-axis_top;//坐标轴高
+            var horizontal_tick_spacing=10;//水平计数的间距
+            var vertical_tick_spacing=10;//垂直计数的间距
+
+            //画网格
+            function drawSolidGrid(step) {
+                context.strokeStyle = 'lightgray';
+                context.lineWidth = 0.5;
+                for (var i = step+0.5; i < canvas.width; i += step) {
+                    context.beginPath();
+                    context.moveTo(i, 0);
+                    context.lineTo(i, canvas.height);
+                    context.stroke();
+                }
+                for (var i = step+0.5; i < canvas.height; i += step) {
+                    context.beginPath();
+                    context.moveTo(0, i);
+                    context.lineTo(canvas.width, i);
+                    context.stroke();
+                }
+
+            }
+            drawSolidGrid(10);
+
+            //整个程序只用执行这一个方法
+            function drawAxes(){
+                context.save();
+                context.strokeStyle='blue';
+                drawHorizontalAxis();
+                drawVerticalAxis();
+
+                context.strokeStyle='navy';
+                drawHorizontalAxisTicks();
+                drawVerticalAxisTicks();
+                context.restore();
+            }
+
+
+            //水平轴
+            function drawHorizontalAxis(){
+                context.beginPath();
+                context.moveTo(axis_orgin.x,axis_orgin.y);//从原点开始往右画
+                context.lineTo(axis_right,axis_orgin.y);
+                context.stroke();
+            }
+
+            function drawVerticalAxis(){
+                context.beginPath();
+                context.moveTo(axis_orgin.x,axis_orgin.y);
+                context.lineTo(axis_orgin.x,axis_top);
+                context.stroke();
+            }
+
+            //水平计数
+            function drawHorizontalAxisTicks() {
+                var delta;//就是每一条计数的长度，源代码中每5根会有一根加长 意思就是5 10 15这样的计数是特殊的
+                for(var i=1;i<axis_width/horizontal_tick_spacing;i++){
+                    delta=i%5==0?10:5;
+                    context.beginPath();
+                    context.moveTo(axis_orgin.x+i*horizontal_tick_spacing,axis_orgin.y-delta);
+                    context.lineTo(axis_orgin.x+i*horizontal_tick_spacing,axis_orgin.y+delta);
+                    context.stroke();
+                }
+            }
+
+            //垂直轴的计数
+            function drawVerticalAxisTicks() {
+                var delta;//就是每一条计数的长度，源代码中每5根会有一根加长 意思就是5 10 15这样的计数是特殊的
+                for(var i=1;i<axis_height/vertical_tick_spacing;i++){
+                    delta=i%5==0?10:5;
+                    context.beginPath();
+                    context.moveTo(axis_orgin.x-delta,axis_orgin.y-i*vertical_tick_spacing);
+                    context.lineTo(axis_orgin.x+delta,axis_orgin.y-i*vertical_tick_spacing);
+                    context.stroke();
+                }
+            }
+
+                drawAxes();
+
+        }
+    </script>
+</head>
+<body>
+<canvas id='canvas' width='600' height='300'>
+    Canvas not supported!
+</canvas>
+</body>
+</html>

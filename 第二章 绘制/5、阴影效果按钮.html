@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+
+        }
+
+        body {
+            background: #ddd;
+        }
+
+        #canvas {
+            margin: 10px;
+            background: #fff;
+            border: thin inset #aaa;
+        }
+    </style>
+    <script>
+        onload = function () {
+            var canvas = document.getElementById('canvas');
+            var context = canvas.getContext('2d');//d必须小写
+            var w = canvas.width;
+            var h = canvas.height;
+
+
+            var shadow_color = 'rgba(0,0,0,0.7)';
+            var ifSelected=false;
+            function setShadow() {
+                context.shadowColor = shadow_color;
+                context.shadowOffsetX = 1;
+                context.shadowOffsetY = 1;
+                context.shadowBlur = 2;
+
+            }
+
+            function setSelectedShadow() {
+                context.shadowColor = shadow_color;
+                context.shadowOffsetX = 4;
+                context.shadowOffsetY = 4;
+                context.shadowBlur = 5;
+            }
+
+//            context.fillStyle = 'lightblue';
+//            setShadow();
+//            context.fillRect(10, 10, 100, 100);
+
+            context.strokeStyle = 'lightblue';
+            setShadow();
+            context.strokeRect(10, 10, 100, 100);
+
+            canvas.onclick = function () {
+                context.clearRect(0, 0, w, h);
+                if(!ifSelected){
+                    setSelectedShadow()
+                }
+                else{
+                    setShadow()
+                }
+                ifSelected=!ifSelected;
+                context.strokeRect(10, 10, 100, 100);
+
+            }
+        }
+    </script>
+</head>
+<body>
+<canvas id='canvas' width='600' height='300'>
+    Canvas not supported!
+</canvas>
+</body>
+</html>

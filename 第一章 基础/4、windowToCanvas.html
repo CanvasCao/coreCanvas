@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+
+        body {
+            background: #ddd;
+        }
+
+        #canvas {
+            position: absolute;
+            left: 0px;
+            top: 20px;
+            margin: 10px;
+            background: #fff;
+            border: thin inset #aaa;
+            cursor: pointer;
+            /*height: 300px;*/
+            /*width: 600px;*/
+        }
+
+        #readout {
+            margin: 10px;
+            color: blue;
+            /*border: 1px solid #000;*/
+        }
+    </style>
+    <script>
+        onload = function () {
+            var image = new Image();
+            var readout = document.getElementById('readout');
+            var canvas = document.getElementById('canvas');
+            var context = canvas.getContext('2d');//d必须小写
+
+            //输入canvas对象和鼠标的xy
+            //返回canvas对象的xy
+            function windowToCanvas(canvas, clientX, clientY) {
+                var boundingRect=canvas.getBoundingClientRect();
+//                console.log(boundingRect);
+                //canvas画布的boundingRect边界矩形有六个属性
+                //height: 322 canvas画布的高
+                //width: 622 canvas画布的宽
+                //top: 30 基于整个window的顶边的位置
+                //bottom: 352 基于整个window的底边的位置
+                //left: 10 基于整个window的左边的位置
+                //right: 632 基于整个window的右边的位置
+
+
+                //P19 书上绝壁有错误
+                return {
+                    //鼠标的x-boundingRect的x
+                    x:(clientX-boundingRect.left)/(boundingRect.width/canvas.width), //boundingRect.width/canvas.width就是放大的倍数
+                    y:(clientY-boundingRect.top)/(boundingRect.height/canvas.height)
+                }
+
+            }
+
+
+
+            //你是想画网格么？
+            function drawBackGround(){
+                var vertical_line_spacing=12;
+                var w=canvas.width;
+                var h=canvas.height;
+
+//                context.clearRect(0,0,w,h);
+                context.strokeStyle='lightgray';
+                context.lineWidth=0.5;
+
+                while(h>=vertical_line_spacing*1){
+                    context.beginPath();
+                    context.moveTo(0,h);
+                    context.lineTo(canvas.width,h);
+                    context.stroke();
+                    h-=vertical_line_spacing;
+                }
+
+            }
+
+
+            //一垂直一水平的导航线
+            function drawGuidelines(x,y){
+                context.strokeStyle='rgba(0,0,230,0.8)';
+                context.lineWidth=0.5;
+                drawVerticalLine(x);
+                drawHorizontalLine(y);
+
+                function drawVerticalLine(x){
+                    context.beginPath();
+                    context.moveTo(x+0.5,0);
+                    context.lineTo(x+0.5,canvas.height)
+                    context.stroke();
+                }
+                function drawHorizontalLine(y){
+                    context.beginPath();
+                    context.moveTo(0,y+0.5);
+                    context.lineTo(canvas.width,y+0.5)
+                    context.stroke();
+                }
+            }
+
+            function updateReadout(x,y){
+                readout.innerText='('+ x.toFixed(0) +','+y.toFixed(0)  +')'
+            }
+
+            function drawImage(){
+                context.drawImage(image,0,0)
+            }
+            //event handlers..........................................
+            canvas.onmousemove=function(e){
+                context.clearRect(0,0,canvas.width,canvas.height);
+
+
+                var location=windowToCanvas(canvas, e.clientX, e.clientY);
+                updateReadout(location.x,location.y);
+
+
+                drawBackGround();
+                drawImage();
+                drawGuidelines(location.x,location.y)
+            }
+
+
+            //初始化....................................................
+            image.src='win.png';
+            image.onload=function(e){
+                drawImage();
+            }
+            drawBackGround();
+        }
+    </script>
+</head>
+<body>
+<div id="readout"></div>
+
+<canvas id='canvas' width='600' height='300'>
+<!--<canvas id='canvas'>-->
+    Canvas not supported!
+</canvas>
+</body>
+</html>

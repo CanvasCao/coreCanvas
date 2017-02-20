@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        *{
+            padding: 0;
+            margin: 0;
+
+        }
+        body{
+            background:#ddd;
+        }
+        #canvas{
+            margin:10px;
+            padding:10px;
+            background:#fff;
+            border:thin inset #aaa;
+            width: 600px;
+            height: 300px;
+        }
+    </style>
+    <script>
+        onload=function(){
+            var canvas=document.getElementById('canvas');
+            var context=canvas.getContext('2d');//d必须小写
+
+            context.font='38pt 黑体';
+            context.fillStyle='lightblue';//填充色
+            context.strokeStyle='blue';//描边色
+            context.fillText("hello canvas",canvas.width/2-150,150);
+            context.strokeText("hello canvas",canvas.width/2-150,148);
+
+        }
+    </script>
+</head>
+<body>
+<canvas id='canvas'>
+<!-- 设置宽高时不能加px-->
+    <!-- 尽管浏览器普遍允许设定px 但是根据规范书这些属性只能是非负整数-->
+    Canvas not supported!
+</canvas>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        *{
+            padding: 0;
+            margin: 0;
+
+        }
+        body{
+            background:#ddd;
+        }
+        #canvas{
+            margin:10px;
+            background:#fff;
+            border:thin inset #aaa;
+            /*cursor: crosshair;*/
+        }
+    </style>
+    <script>
+        onload=function(){
+            var canvas=document.getElementById('canvas');
+            var context=canvas.getContext('2d');//d必须小写
+            var dragging=false;
+
+            function windowToCanvas(canvas, clientX, clientY) {
+                var boundingRect=canvas.getBoundingClientRect();
+//                console.log(boundingRect);
+                //canvas画布的boundingRect边界矩形有六个属性
+                //height: 322 canvas画布的高
+                //width: 622 canvas画布的宽
+                //top: 30 基于整个window的顶边的位置
+                //bottom: 352 基于整个window的底边的位置
+                //left: 10 基于整个window的左边的位置
+                //right: 632 基于整个window的右边的位置
+
+
+                //P19 书上绝壁有错误
+                return {
+                    //鼠标的x-boundingRect的x
+                    x:(clientX-boundingRect.left)/(boundingRect.width/canvas.width), //boundingRect.width/canvas.width就是放大的倍数
+                    y:(clientY-boundingRect.top)/(boundingRect.height/canvas.height)
+                }
+
+            }
+
+            function setEraserAttr(){
+                context.lineWidth=1;
+                context.shadowColor='blue';
+                context.shadowOffsetX=-5;
+                context.shadowOffsetX=-5;
+                context.shadowBlur=10;
+                context.strokeStyle='rgba(0,0,255,0.6)';
+            }
+
+            function drawEraser(loc){
+                context.save();
+                setEraserAttr();
+
+                context.beginPath();
+                context.arc(loc.x,loc.y,60,0,Math.PI*2,false);
+                context.clip();//clip()方法使得产生的阴影都限制在了圆形范围内
+                context.stroke();
+
+                context.restore();
+
+            }
+
+
+            canvas.onmousedown=function(){
+                dragging=true;
+            }
+            canvas.onmousemove=function(e){
+
+                if(dragging){
+                    var loc=windowToCanvas(canvas, e.clientX, e.clientY);
+                    context.clearRect(0,0,canvas.width,canvas.height)
+                    drawEraser(loc);
+                }
+
+            }
+            window.onmouseup=function(){
+                dragging=false;
+                context.clearRect(0,0,canvas.width,canvas.height)
+
+            }
+        }
+    </script>
+</head>
+<body>
+<canvas id='canvas' width='600' height='300'>
+    Canvas not supported!
+</canvas>
+</body>
+</html>

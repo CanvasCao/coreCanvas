@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+
+        body {
+            background: #ddd;
+        }
+
+        #canvas {
+            margin: 10px;
+            background: #fff;
+            border: thin inset #aaa;
+        }
+
+        #controls {
+            margin: 10px;
+        }
+    </style>
+
+    <script src="../shared/shared.js"></script>
+    <script>
+        onload = function () {
+            var canvas = document.getElementById('canvas'),
+                    h = canvas.height,
+                    w = canvas.width,
+                    ctx = canvas.getContext('2d')//d必须小写
+
+
+            //最关键的维护列表
+            var polygons = [];
+
+
+            //多边形对象
+            function Polygon(json) {
+                this.fillStyle = json.fillStyle;
+                this.strokeStyle = json.strokeStyle;
+                this.filled = json.filled;
+                this.radius = json.radius;
+                this.sides = json.sides;
+                this.startAngle = json.startAngle;
+                this.centerX = json.centerX;
+                this.centerY = json.centerY;
+            };
+            Polygon.prototype = {
+                //这个函数传入中心点和半径和边数和起始角度 返回多边形的每一个点的坐标
+                getPoints: function () {
+                    var that = this;
+
+                    var points = [];//返回的多边形每个点的坐标
+                    var angle = degreeToRad(this.startAngle) || 0;
+
+
+                    for (var i = 1; i <= this.sides; i++) {
+                        var x = that.centerX + that.radius * Math.sin(angle);
+                        var y = that.centerY - that.radius * Math.cos(angle);
+                        points.push({'x': x, 'y': y})
+                        angle += degreeToRad(360 / that.sides);
+                    }
+                    return points;
+                },
+
+                //这个函数画出线段 会调用上面的函数作为子函数
+                createPath: function () {
+                    var points = this.getPoints();
+                    ctx.beginPath();
+                    ctx.moveTo(points[0].x, points[0].y);
+                    for (var i = 1; i < this.sides; i++) {
+                        ctx.lineTo(points[i].x, points[i].y);
+                    }
+                    ctx.closePath();
+                },
+
+                stroke: function () {
+                    ctx.save();
+                    this.createPath();
+                    ctx.strokeStyle = this.strokeStyle;
+                    ctx.stroke();
+                    ctx.restore();
+                },
+
+                fill: function () {
+                    ctx.save();
+                    this.createPath();
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+                    ctx.shadowOffsetX = 2;
+                    ctx.shadowOffsetY = 2;
+                    ctx.shadowBlur = 4;
+                    ctx.fillStyle = this.fillStyle;
+                    ctx.fill();
+                    ctx.restore();
+                },
+
+                //显然是为了拖动
+                move: function (x, y) {
+                    this.centerX = x;
+                    this.centerY = y;
+                },
+
+                //自己加的render
+                render: function () {
+                    this.stroke();
+                    if (this.filled) {
+                        this.fill();
+                    }
+                }
+            };
+
+
+            //dom..........................
+            var strokeStyleSelect = document.getElementById('strokeStyleSelect');
+            var fillStyleSelect = document.getElementById('fillStyleSelect');
+            var sidesSelect = document.getElementById('sidesSelect');
+            var startAngleSelect = document.getElementById('startAngleSelect');
+
+            var fillCheckbox = document.getElementById('fillCheckbox');
+            var editCheckbox = document.getElementById('editCheckbox');
+            var guidewiresCheckbox = document.getElementById('guidewiresCheckbox');
+            var eraseBtn = document.getElementById('eraseBtn');
+
+
+            //绘画相关
+            var mouseDownCanvas = {x: 0, y: 0};//鼠标相对于canvas的位置
+            var ifDragging = false;
+            var creatingPolygon;
+            var draggingPolygon = null, draggingOriX, draggingOriY;//拖动多边形的原始XY
+
+            //domValue...
+            var ifFill = fillCheckbox.checked;
+            var ifGuidewire = guidewiresCheckbox.checked;
+            var ifEdit = editCheckbox.checked;
+
+            //画网格
+            drawSolidGrid(ctx, 10);
+
+            //初始化第一次画图数据...............................
+            ctx.strokeStyle = strokeStyleSelect.value;
+            ctx.fillStyle = fillStyleSelect.value;
+            var sides = sidesSelect.value;
+            var startAngle = startAngleSelect.value;
+
+
+            //canvas Event............................................
+            canvas.onmousedown = function (e) {
+                e.preventDefault();
+                //记录鼠标相对于canvas的位置
+                var loc = windowToCanvas(canvas, e.clientX, e.clientY);
+                mouseDownCanvas.x = loc.x;
+                mouseDownCanvas.y = loc.y;
+
+                //进入编辑也就是拖动模式
+                if (ifEdit) {
+                    polygons.forEach(function (e, i, array) {
+                        //创建一条路径,判断鼠标点击下的点是否在这个路径里
+                        e.createPath();
+                        if (ctx.isPointInPath(loc.x, loc.y)) {
+                            //获得拖动图案的引用.......
+                            draggingPolygon = e;
+                            //获得拖动图案的圆心......
+                            draggingOriX = draggingPolygon.centerX;
+                            draggingOriY = draggingPolygon.centerY;
+                        }
+                    })
+                }
+
+                //绘图模式
+                else {
+                }
+
+
+                ifDragging = true;
+
+                //保存表面用于恢复
+                saveDrawingSurface(canvas, ctx);
+            }
+
+            window.onmousemove = function (e) {
+                e.preventDefault();
+                var loc = windowToCanvas(canvas, e.clientX, e.clientY);
+                var dx = loc.x - mouseDownCanvas.x;//a X轴偏移量 b Y轴偏移量
+                var dy = loc.y - mouseDownCanvas.y;
+
+                if (ifEdit && ifDragging) {
+
+                    //如果没有选中多边形直接退出...
+                    if (!draggingPolygon) {
+                        return;
+                    }
+                    //更新获得引用的那一个多边形
+                    draggingPolygon.centerX = draggingOriX + dx;
+                    draggingPolygon.centerY = draggingOriY + dy;
+                    //然后重新更新画布重新画
+                    ctx.clearRect(0, 0, w, h);
+                    drawSolidGrid(ctx, 10);
+
+                    [].forEach.call(polygons, function (e, i, arr) {
+                        e.render();
+                    })
+
+                }
+                else if (ifDragging) {
+                    restoreDrawingSurface(ctx);
+
+                    //根据要求每次的辅助线都是圆心
+                    if (ifGuidewire) {
+                        drawGuidewires(canvas, ctx, mouseDownCanvas.x, mouseDownCanvas.y);
+                    }
+
+                    //鼠标只要在动每次都创建一个新的
+                    creatingPolygon = new Polygon(
+                            {
+                                fillStyle: ctx.fillStyle,
+                                strokeStyle: ctx.strokeStyle,
+                                filled: ifFill,
+                                radius: Math.abs(Math.sqrt(dx * dx + dy * dy)),
+                                sides: sides,
+                                startAngle: startAngle,
+
+                                centerX: mouseDownCanvas.x,
+                                centerY: mouseDownCanvas.y,
+                            })
+
+                    creatingPolygon.render();
+                }
+
+
+            }
+
+            window.onmouseup = function (e) {
+                e.preventDefault();
+
+
+                //不在编辑模式 说明正在画
+                if (ifDragging && !ifEdit) {
+                    restoreDrawingSurface(ctx);
+                    //并且加入到列表进行维护
+                    polygons.push(creatingPolygon);
+                    //真的画上去了哟~
+                    creatingPolygon.render();
+                }
+
+
+                draggingPolygon = null;
+                ifDragging = false;
+
+
+            }
+
+
+            //bindEvent......................................................
+            eraseBtn.onclick = function () {
+                ctx.clearRect(0, 0, w, h);
+                drawSolidGrid(10);
+                polygons = [];
+            }
+            strokeStyleSelect.onchange = function () {
+                ctx.strokeStyle = strokeStyleSelect.value;
+            }
+            fillStyleSelect.onchange = function () {
+                ctx.fillStyle = fillStyleSelect.value;
+            }
+            sidesSelect.onchange = function () {
+                sides = sidesSelect.value;
+            }
+            startAngleSelect.onchange = function () {
+                startAngle = startAngleSelect.value;
+            }
+            fillCheckbox.onchange = function () {
+                ifFill = fillCheckbox.checked;
+            }
+            editCheckbox.onchange = function (e) {
+                if (editCheckbox.checked) {
+                    canvas.style.cursor = 'pointer';
+                    ifEdit = true;
+                }
+                else {
+                    canvas.style.cursor = 'crosshair';
+                    ifEdit = false;
+                }
+            };
+            guidewiresCheckbox.onchange = function () {
+                ifGuidewire = guidewiresCheckbox.checked;
+            }
+
+        }
+    </script>
+</head>
+<body>
+<div id='controls'>
+    Stroke Color: <select name="" id="strokeStyleSelect">
+    <option value="red">red</option>
+    <option value="green">green</option>
+    <option value="blue">blue</option>
+</select>
+    Fill Color: <select name="" id="fillStyleSelect">
+    <option value="red">red</option>
+    <option value="green">green</option>
+    <option value="blue">blue</option>
+</select>
+    Sides: <select name="" id="sidesSelect">
+    <option value="4">4</option>
+    <option value="6">6</option>
+    <option value="8">8</option>
+    <option value="8">10</option>
+</select>
+    Start Angle: <select name="" id="startAngleSelect">
+    <option value="0">0</option>
+    <option value="22.5">22.5</option>
+    <option value="45">45</option>
+    <option value="67.5">67.5</option>
+    <option value="90">90</option>
+</select>
+
+    Fill:
+    <input type="checkbox" name="" id="fillCheckbox" checked/>
+    &nbsp
+    Edit: <input type='checkbox' id='editCheckbox'/>
+    &nbsp
+
+    Guidewires:
+    <input type="checkbox" name="" id="guidewiresCheckbox" checked/>
+    <input type="button" value="Erase all" id="eraseBtn"/>
+</div>
+<canvas id='canvas' width='600' height='300'>
+    Canvas not supported!
+</canvas>
+</body>
+</html>

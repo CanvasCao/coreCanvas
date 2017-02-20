@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        *{
+            padding: 0;
+            margin: 0;
+
+        }
+        body{
+            background:#ddd;
+        }
+        #canvas{
+            margin:10px;
+            background:#fff;
+            border:thin inset #aaa;
+        }
+    </style>
+    <script>
+        onload=function(){
+            var canvas=document.getElementById('canvas');
+            var context=canvas.getContext('2d');//d必须小写
+            var w=canvas.width;
+            var h=canvas.height;
+
+            function drawGrid(step) {
+                context.strokeStyle = 'lightgray';
+                context.lineWidth = 0.5;
+                for (var i = step; i < w; i += step) {
+                    context.beginPath();
+                    context.moveTo(i, 0);
+                    context.lineTo(i, h);
+                    context.stroke();
+                }
+                for (var i = step; i < h; i += step) {
+                    context.beginPath();
+                    context.moveTo(0, i);
+                    context.lineTo(w, i);
+                    context.stroke();
+                }
+            }
+            drawGrid(10);
+
+            context.fillStyle='rgba(100,140,230,0.5)';
+            context.strokeStyle=context.fillStyle;
+
+            context.beginPath();
+            context.arc(300,190,150,0,Math.PI*2,false);
+            context.arc(300,190,100,0,Math.PI*2,true);
+            context.shadowColor='rgba(0,0,0,0.8)';
+            context.shadowOffsetX=12;
+            context.shadowOffsetY=12;
+            context.shadowBlur=15;
+            context.fill();//填充加阴影
+            context.shadowColor=undefined;
+            context.shadowOffsetX=0;
+            context.shadowOffsetY=0;
+            context.shadowBlur=0;
+            context.stroke();//描边不加阴影 取消阴影的方式
+
+
+        }
+    </script>
+</head>
+<body>
+<canvas id='canvas' width='750' height='500'>
+    Canvas not supported!
+</canvas>
+</body>
+</html>

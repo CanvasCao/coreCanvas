@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+
+        body {
+            background: #ddd;
+        }
+
+        #canvas {
+            margin: 10px;
+            background: #fff;
+            border: thin inset #aaa;
+        }
+
+        #controls {
+            margin: 10px;
+        }
+    </style>
+    <script>
+        onload = function () {
+            function windowToCanvas(canvas, clientX, clientY) {
+                var boundingRect = canvas.getBoundingClientRect();
+//                console.log(boundingRect);
+                //canvas画布的boundingRect边界矩形有六个属性
+                //height: 322 canvas画布的高
+                //width: 622 canvas画布的宽
+                //top: 30 基于整个window的顶边的位置
+                //bottom: 352 基于整个window的底边的位置
+                //left: 10 基于整个window的左边的位置
+                //right: 632 基于整个window的右边的位置
+
+
+                //P19 书上绝壁有错误
+                return {
+                    //鼠标的x-boundingRect的x
+                    x: (clientX - boundingRect.left) / (boundingRect.width / canvas.width), //boundingRect.width/canvas.width就是放大的倍数
+                    y: (clientY - boundingRect.top) / (boundingRect.height / canvas.height)
+                }
+
+            }
+
+            function degreeToRad(degree) {
+                var rad = degree * Math.PI / 180;
+                return rad;
+            }
+
+            var canvas = document.getElementById('canvas');
+            var h = canvas.height;
+            var w = canvas.width;
+            var context = canvas.getContext('2d');//d必须小写
+
+            //dom
+            var strokeStyleSelect = document.getElementById('strokeStyleSelect');
+            var fillStyleSelect = document.getElementById('fillStyleSelect');
+            var sidesSelect = document.getElementById('sidesSelect');
+            var startAngleSelect = document.getElementById('startAngleSelect');
+
+            var fillCheckbox = document.getElementById('fillCheckbox');
+            var guidewiresCheckbox = document.getElementById('guidewiresCheckbox');
+            var eraseBtn = document.getElementById('eraseBtn');
+
+
+            //绘画相关
+            var drawingSurfaceImageData;//保存的绘画表面
+            var mouseDown = {x: 0, y: 0};//鼠标相对于window的位置
+            var mouseDownCanvas = {x: 0, y: 0};//鼠标相对于canvas的位置
+            var ifDragging = false;
+            var ifFill = fillCheckbox.checked;
+            var ifGuidewire = guidewiresCheckbox.checked;
+
+            //画网格
+            function drawSolidGrid(step) {
+                context.save();
+                context.strokeStyle = 'lightgray';
+                context.lineWidth = 0.5;
+                for (var i = step + 0.5; i < canvas.width; i += step) {
+                    context.beginPath();
+                    context.moveTo(i, 0);
+                    context.lineTo(i, canvas.height);
+                    context.stroke();
+                }
+                for (var i = step + 0.5; i < canvas.height; i += step) {
+                    context.beginPath();
+                    context.moveTo(0, i);
+                    context.lineTo(canvas.width, i);
+                    context.stroke();
+                }
+                context.restore();
+            }
+
+            drawSolidGrid(10);
+
+            //初始化第一次画图数据
+            context.strokeStyle = strokeStyleSelect.value;
+            context.fillStyle = fillStyleSelect.value;
+            var sides = sidesSelect.value;
+            var startAngle = startAngleSelect.value;
+
+            //保存和恢复绘画表面
+            function saveDrawingSurface() {
+                drawingSurfaceImageData = context.getImageData(0, 0, w, h);
+            }
+
+            function restoreDrawingSurface() {
+                context.putImageData(drawingSurfaceImageData, 0, 0);
+            }
+
+            //画辅助线xy
+            function drawGuidewires(x, y) {
+                context.save();
+                context.strokeStyle = 'rgba(0,0,230,0.4)';
+                context.lineWidth = 0.5;
+                drawHorizontalLine(y);
+                drawVerticalLine(x);
+                context.restore();
+
+
+                function drawHorizontalLine(y) {
+                    context.beginPath();
+                    context.moveTo(0, y);
+                    context.lineTo(w, y);
+                    context.stroke();
+                }
+
+                function drawVerticalLine(x) {
+                    context.beginPath();
+                    context.moveTo(x, 0);
+                    context.lineTo(x, h);
+                    context.stroke();
+                }
+            }
+
+
+            //Functions...................................
+
+            //这个函数传入中心点和半径和边数和起始角度 返回多边形的每一个点的坐标
+            function getPolygonPoints(centerX, centerY, r, sides, startAngle) {
+                var points = [];//返回的多边形每个点的坐标
+                var angle = degreeToRad(startAngle) || 0;
+
+                for (var i = 0; i < sides; i++) {
+                    var x, y;
+                    x = centerX + r * Math.sin(angle);
+                    y = centerY - r * Math.cos(angle);
+                    points.push({'x': x, 'y': y})
+                    angle += degreeToRad(360 / sides);
+                }
+                return points;
+            }
+
+            //这个函数画出线段 会调用上面的函数作为子函数
+            function createPolygonPath(centerX, centerY, r, sides, startAngle) {
+                var points = getPolygonPoints(centerX, centerY, r, sides, startAngle);
+                context.beginPath();
+                context.moveTo(points[0].x, points[0].y);
+                for (var i = 1; i < sides; i++) {
+                    context.lineTo(points[i].x, points[i].y);
+                }
+                context.closePath();
+            }
+
+            //画出多边形代码 不是Rubberband 类似于15.html的drawThisTimeCircle
+            function drawRubberbandShape(sides, startAngle, nowX, nowY) {
+                var a = nowX - mouseDownCanvas.x;
+                var b = nowY - mouseDownCanvas.y;
+
+                var r = Math.abs(Math.sqrt(a * a + b * b));
+
+
+                createPolygonPath(mouseDownCanvas.x, mouseDownCanvas.y, r, sides, startAngle);
+                context.stroke();
+                if (ifFill) {
+                    context.fill();
+                }
+            }
+
+            //canvas Event.........................................
+            canvas.onmousedown = function (e) {
+                e.preventDefault();
+                ifDragging = true;
+
+                //记录鼠标起始位置
+                mouseDown.x = e.clientX;
+                mouseDown.y = e.clientY;
+                //记录鼠标相对于canvas的位置
+                var loc = windowToCanvas(canvas, e.clientX, e.clientY);
+                mouseDownCanvas.x = loc.x;
+                mouseDownCanvas.y = loc.y;
+
+                //保存表面用于恢复
+                saveDrawingSurface()
+            }
+
+            window.onmousemove = function (e) {
+                e.preventDefault();
+                if (ifDragging) {
+                    restoreDrawingSurface()
+
+                    //根据要求每次的辅助线都是圆心
+                    if (ifGuidewire) {
+                        drawGuidewires(mouseDownCanvas.x, mouseDownCanvas.y);
+                    }
+
+                    var loc = windowToCanvas(canvas, e.clientX, e.clientY);
+                    drawRubberbandShape(sides, startAngle, loc.x, loc.y);
+                }
+            }
+
+            window.onmouseup = function (e) {
+                e.preventDefault();
+
+                if (ifDragging) {
+                    restoreDrawingSurface();
+
+                    //再画出刚才的那个多边形
+                    var loc = windowToCanvas(canvas, e.clientX, e.clientY);
+                    drawRubberbandShape(sides, startAngle, loc.x, loc.y);
+
+                    ifDragging = false;
+
+                }
+
+            }
+
+
+            //Event......................................................
+            eraseBtn.onclick = function () {
+                context.clearRect(0, 0, w, h);
+                drawSolidGrid(10);
+                //为什么要saveDrawingSurface()
+            }
+            strokeStyleSelect.onchange = function () {
+                context.strokeStyle = strokeStyleSelect.value;
+            }
+            fillStyleSelect.onchange = function () {
+                context.fillStyle = fillStyleSelect.value;
+            }
+            sidesSelect.onchange = function () {
+                sides = sidesSelect.value;
+            }
+            startAngleSelect.onchange = function () {
+                startAngle = startAngleSelect.value;
+            }
+            fillCheckbox.onchange = function () {
+                ifFill = fillCheckbox.checked;
+            }
+            guidewiresCheckbox.onchange = function () {
+                ifGuidewire = guidewiresCheckbox.checked;
+            }
+
+        }
+    </script>
+</head>
+<body>
+<div id='controls'>
+    Stroke Color: <select name="" id="strokeStyleSelect">
+    <option value="red">red</option>
+    <option value="green">green</option>
+    <option value="blue">blue</option>
+</select>
+    Fill Color: <select name="" id="fillStyleSelect">
+    <option value="red">red</option>
+    <option value="green">green</option>
+    <option value="blue">blue</option>
+</select>
+    Sides: <select name="" id="sidesSelect">
+    <option value="4">4</option>
+    <option value="6">6</option>
+    <option value="8">8</option>
+    <option value="8">10</option>
+</select>
+    Start Angle: <select name="" id="startAngleSelect">
+    <option value="0">0</option>
+    <option value="22.5">22.5</option>
+    <option value="45">45</option>
+    <option value="67.5">67.5</option>
+    <option value="90">90</option>
+</select>
+
+    Fill:
+    <input type="checkbox" name="" id="fillCheckbox" checked/>
+    &nbsp
+    Guidewires:
+    <input type="checkbox" name="" id="guidewiresCheckbox" checked/>
+    <input type="button" value="Erase all" id="eraseBtn"/>
+</div>
+<canvas id='canvas' width='600' height='300'>
+    Canvas not supported!
+</canvas>
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+
+        }
+
+        body {
+            background: #ddd;
+        }
+
+        #canvas {
+            margin: 10px;
+            background: #fff;
+            border: thin inset #aaa;
+        }
+
+        #controllers {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+<div id="controllers">
+    描边颜色：
+    <select id='strokeStyleSelect'>
+        <option value='red'>red</option>
+        <option value='green'>green</option>
+        <option value='blue'>blue</option>
+    </select>
+    &nbsp
+    是否引导线: <input id='guidewireCheckbox' type='checkbox' checked/>
+    &nbsp
+    <input id='eraseAllButton' type='button' value='Erase all'/>
+
+</div>
+<canvas id='canvas' width='600' height='300'>
+    Canvas not supported!
+</canvas>
+<script src="../shared/shared.js"></script>
+<script>
+
+    //注意状态机 可解
+    onload = function () {
+        var canvas = document.getElementById('canvas');
+        var ctx = canvas.getContext('2d');//d必须小写
+        var mouseDownCanvas = {};//鼠标按下时的 x y
+        var mouseCurCanvas = {};//鼠标按下时的 x y
+        var ifDragging = false;
+        var state = 'A';//A拖动模式  B编辑模式 C编辑失败模式
+        var pointRadius = 5;
+        var editingPoint = null;
+
+        //dom.............................
+        var strokeStyleSelect = document.getElementById('strokeStyleSelect');
+        var guidewireCheckbox = document.getElementById('guidewireCheckbox');
+        var eraseAllButton = document.getElementById('eraseAllButton');
+
+        //锚点 就是第一和第四个点
+        var anchorPoints = [{}, {}];
+        //控制点 第二和第三个点
+        var controlPoints = [{}, {}];
+
+        //网格...................
+        drawSolidGrid(ctx, 10);
+
+
+        //画三次贝塞尔曲线...
+        function drawBezierCurve() {
+            ctx.save();
+            ctx.beginPath();
+            ctx.strokeStyle = strokeStyleSelect.value;
+            ctx.moveTo(anchorPoints[0].x, anchorPoints[0].y);
+            ctx.bezierCurveTo(controlPoints[0].x, controlPoints[0].y, controlPoints[1].x, controlPoints[1].y, anchorPoints[1].x, anchorPoints[1].y);
+            ctx.stroke();
+            ctx.restore();
+
+        }
+
+        function drawPoints() {
+            [].forEach.call(anchorPoints, function (e, i, arr) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, pointRadius, 0, Math.PI * 2, true);
+                ctx.strokeStyle = 'blue';
+                ctx.stroke();
+                ctx.fillStyle = 'green';
+                ctx.fill();
+                ctx.restore();
+            });
+
+            [].forEach.call(controlPoints, function (e, i, arr) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, pointRadius, 0, Math.PI * 2, true);
+                ctx.strokeStyle = 'blue';
+                ctx.stroke();
+                ctx.fillStyle = 'yellow';
+                ctx.fill();
+                ctx.restore();
+            });
+        }
+
+        function getEditPoint(x, y) {
+            var flag = null;
+            [].forEach.call(anchorPoints, function (e, i, arr) {
+//                ctx.save();
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, pointRadius, 0, Math.PI * 2, true);
+//                ctx.restore();
+                if (ctx.isPointInPath(x, y)) {
+                    flag = e;
+                }
+            });
+            [].forEach.call(controlPoints, function (e, i, arr) {
+//                ctx.save();
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, pointRadius, 0, Math.PI * 2, true);
+//                ctx.restore();
+                if (ctx.isPointInPath(x, y)) {
+                    flag = e;
+                }
+            });
+
+            return flag;
+        }
+
+
+        canvas.onmousedown = function (e) {
+            e.preventDefault();
+            ifDragging = true;
+
+            //记录鼠标相对于canvas的位置
+            var loc = windowToCanvas(canvas, e.clientX, e.clientY);
+            mouseDownCanvas.x = loc.x;
+            mouseDownCanvas.y = loc.y;
+
+            //拖动模式...
+            if (state == 'A') {
+                //只有拖动模式才要saveSurface......试了快一个小时了 其实我也不知道为什么！！！！！！！
+                saveDrawingSurface(canvas, ctx);
+                anchorPoints[0].x = mouseDownCanvas.x;
+                anchorPoints[0].y = mouseDownCanvas.y;
+            }
+            //编辑模式...
+            else if (state == 'B') {
+                editingPoint = getEditPoint(loc.x, loc.y);
+                if (editingPoint) {
+                    state = 'B';
+                }
+                else {
+                    state = 'C';
+                }
+            }
+            //拖动失败模式 是不存在mousedown的
+            else if (state == 'C') {
+            }
+
+        }
+
+
+        canvas.onmousemove = function (e) {
+            e.preventDefault();
+            //记录鼠标相对于canvas的位置
+            var mouseCurCanvas = windowToCanvas(canvas, e.clientX, e.clientY);
+            var dx = mouseCurCanvas.x - mouseDownCanvas.x;//a X轴偏移量 b Y轴偏移量
+            var dy = mouseCurCanvas.y - mouseDownCanvas.y;
+
+            if (ifDragging) {
+                //拖动绘画模式...
+                if (state == 'A') {
+                    //恢复画布
+                    restoreDrawingSurface(ctx);
+
+                    //画引导线
+                    if (guidewireCheckbox.checked) {
+                        drawGuidewires(canvas, ctx, mouseCurCanvas.x, mouseCurCanvas.y);
+                    }
+
+                    //锚点的最后一个点就是当前的鼠标位置...
+                    anchorPoints[1].x = mouseCurCanvas.x;
+                    anchorPoints[1].y = mouseCurCanvas.y;
+
+                    //生成两个控制点...
+                    controlPoints[0].x = mouseDownCanvas.x;
+                    controlPoints[0].y = mouseCurCanvas.y;
+                    controlPoints[1].x = mouseCurCanvas.x;
+                    controlPoints[1].y = mouseDownCanvas.y;
+
+                    drawBezierCurve();
+                    drawPoints();
+
+                }
+                else if (state == 'B') {
+                    restoreDrawingSurface(ctx);
+
+                    editingPoint.x = mouseCurCanvas.x;
+                    editingPoint.y = mouseCurCanvas.y;
+                    drawBezierCurve();
+                    drawPoints();
+                }
+            }
+
+
+        }
+        canvas.onmouseup = function (e) {
+            if (ifDragging) {
+                ifDragging = false;
+                mouseDownCanvas = {};
+                mouseCurCanvas = {};
+                restoreDrawingSurface(ctx);
+
+                if (state == 'A') {
+
+                    drawBezierCurve();
+                    drawPoints();
+
+                    //拖动模式画完一定是 编辑模式
+                    state = 'B';
+                }
+                //编辑模式 如果没有进入编辑失败模式 那他还是编辑模式
+                else if (state == 'B') {
+                    state = 'B';
+                    drawBezierCurve();
+                    drawPoints();
+
+
+                }
+                //编辑模式 进入编辑失败模式 回到拖动模式
+                else if (state == 'C') {
+                    state = 'A';
+                    drawBezierCurve();
+                    editingPoint = null;
+                    //不画点了
+                }
+                console.log(state)
+            }
+        }
+    }
+</script>
+</body>
+</html>

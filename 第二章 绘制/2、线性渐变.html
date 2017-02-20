@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        *{
+            padding: 0;
+            margin: 0;
+
+        }
+        body{
+            background:#ddd;
+        }
+        #canvas{
+            margin:10px;
+            background:#fff;
+            border:thin inset #aaa;
+        }
+    </style>
+    <script>
+        onload=function(){
+            var canvas=document.getElementById('canvas');
+            var context=canvas.getContext('2d');//d必须小写
+            var gradient=context.createLinearGradient(0,0,0,canvas.height)
+            //gradient的四个参数 分别是渐变的起始点xy 和结束点xy的值
+
+
+            //参数分别是在起始结束点的位置 和颜色
+            gradient.addColorStop(0,"blue");
+            gradient.addColorStop(0.25,"white");
+            gradient.addColorStop(0.5,"blue");
+            gradient.addColorStop(0.75,"white");
+            gradient.addColorStop(1,"blue");
+
+            context.fillStyle=gradient;
+            context.rect(0,0,canvas.width,canvas.height);//这里的rect相当于 之前的画线 在fill和stroke之前都是肉眼无法看见的
+            context.fill();//fill相当于在之前画的矩形内填充渐变
+
+            //注意如果矩形剩余部分没有设置颜色 将用最后一个颜色填充
+
+        }
+    </script>
+</head>
+<body>
+<canvas id='canvas' width='600' height='300'>
+    Canvas not supported!
+</canvas>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+
+        }
+
+        body {
+            background: #ddd;
+        }
+
+        #canvas {
+            margin: 10px;
+            padding: 10px;
+            background: #fff;
+            border: thin inset #aaa;
+        }
+    </style>
+    <script>
+        onload = function () {
+            function windowToCanvas(canvas, clientX, clientY) {
+                var boundingRect=canvas.getBoundingClientRect();
+//              console.log(boundingRect);
+                //canvas画布的boundingRect边界矩形有六个属性
+                //height: 322 canvas画布的高
+                //width: 622 canvas画布的宽
+                //top: 30 基于整个window的顶边的位置
+                //bottom: 352 基于整个window的底边的位置
+                //left: 10 基于整个window的左边的位置
+                //right: 632 基于整个window的右边的位置
+
+
+                //P19 书上绝壁有错误
+                return {
+                    //鼠标的x-boundingRect的x
+                    x:(clientX-boundingRect.left)/(boundingRect.width/canvas.width), //boundingRect.width/canvas.width就是放大的倍数
+                    y:(clientY-boundingRect.top)/(boundingRect.height/canvas.height)
+                }
+
+            }
+            var canvas = document.getElementById('canvas');
+            var context = canvas.getContext('2d');//d必须小写
+            var w = canvas.width;
+            var h = canvas.height;
+            var drawingSurfaceImageData;
+            var dragging=false;
+
+            //Save and restore drawing surface..................
+            function saveDrawingSurface() {
+                drawingSurfaceImageData = context.getImageData(0, 0, w, h);
+            }
+
+            function restoreDrawingSurface() {
+                context.putImageData(drawingSurfaceImageData, 0, 0);
+            }
+
+            //Event..........................................
+            canvas.onmousedown=function(e){
+                saveDrawingSurface();
+                dragging=true;
+            }
+
+            canvas.onmousemove=function(e){
+                if(dragging){
+                    context.clearRect(0,0,w+1,h+1);
+                    var location=windowToCanvas(canvas, e.clientX, e.clientY)
+                    drawGuidelines(location.x,location.y);
+                }
+
+                function drawGuidelines(x,y){
+                    context.strokeStyle='rgba(0,0,230,0.8)';
+                    context.lineWidth=0.5;
+                    drawVerticalLine(x);
+                    drawHorizontalLine(y);
+
+                    function drawVerticalLine(x){
+                        context.beginPath();
+                        context.moveTo(x+0.5,0);
+                        context.lineTo(x+0.5,canvas.height)
+                        context.stroke();
+                    }
+                    function drawHorizontalLine(y){
+                        context.beginPath();
+                        context.moveTo(0,y+0.5);
+                        context.lineTo(canvas.width,y+0.5)
+                        context.stroke();
+                    }
+                }
+            }
+
+            canvas.onmouseup=function(e){
+                restoreDrawingSurface();
+                dragging=false;
+            }
+        }
+    </script>
+</head>
+<body>
+<canvas id='canvas' width='600' height='300'>
+    Canvas not supported!
+</canvas>
+</body>
+</html>

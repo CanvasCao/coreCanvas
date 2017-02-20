@@ -1,0 +1,198 @@
+源码在corehtml5canvas.com
+
+1.1 canvas元素
+canvas真正的能力是通过Canvas的context对象表现出来的。
+该环境变量可以从canvas身上获取。
+见【1.canvas范例程序.html】
+
+注意：
+1、<!-- 设置宽高时不能加px-->
+2、<!-- 尽管浏览器普遍允许设定px 但是根据规范书这些属性只能是非负整数-->
+3、var context=canvas.getContext('2d');//d必须小写
+4、默认canvas元素大小是300px宽 150px高
+5、css属性也可以改变canvas元素大小，但是会有意外结果 //就是出错
+
+1.1.1 canvas元素大小与绘图表面的大小
+设置canvas元素大小的两种方法
+1）css设置canvas大小
+2）设置canvas元素的width和height属性
+见【2.通过css设置canvas大小】
+
+canvas元素实际有两套尺寸，一个是元素本身大小，还有一个是元素绘图表面大小。
+当使用方法2设置canvas元素大小，实际上同时修改了元素本身大小和元素绘图表面大小。
+当使用方法1设置canvas元素大小，实际上只会改变元素本身的大小 //本例中绘图表面依然很小300*150 所以字看上去很大
+其实就是浏览器将绘图表面从300*150拉伸到了600*300
+
+
+
+==============================================================================
+关于canvas元素两套尺寸我的理解：
+
+1）canvas的boundingClientRect（基于window的）
+//canvas画布的boundingRect边界矩形有六个属性
+//height: 322 canvas画布的高
+//width: 622 canvas画布的宽
+//top: 30 基于整个window的顶边的位置
+//bottom: 352 基于整个window的底边的位置
+//left: 10 基于整个window的左边的位置
+//right: 632 基于整个window的右边的位置
+
+2）canvas本身的宽高
+
+行内式设置大小其实既修改了canvas基于window的大小又修改了canvas元素本身的大小
+css设置大小其实只改变了canvas基于window的大小 画布依然很小 为了正常显示被撑大的而已
+==============================================================================
+
+
+				
+
+1.2.1 canvas元素的API
+只有两个属性与三个方法
+属性：width和height
+方法：
+getContext() //返回与该canvas元素相关的绘图环境对象，每个canvas元素均有一个这样的环境对象，一个环境对象与一个canvas元素相关联
+toDataURL(type,quality) //返回一个数据地址（data URL），你可以将它设定为img元素的src属性值。
+toBlob(callback,type,args) //返回一个Bolb
+后两个解释在P6
+
+
+1.2 Canvas的绘图环境
+canvas元素仅仅是为了充当绘图环境对象的容器而存在的，
+1.2.1 2d绘图环境
+2d绘图环境的全部属性见图【1、2d绘图环境的全部属性.png】
+
+1.2.2 Canvas状态的保存与恢复
+很多时候我们只想临时性的改变绘图环境的属性值，Canvas的API提供了两个名叫save()和restore()方法。
+用于保存和回复环境的所有属性。
+function drawGrid(strokeStyle,fillStyle){
+	controlContext.save();
+	
+	controlContext.strokeStyle=strokeStyle;
+	controlContext.fillStyle=fillStyle;
+	
+	//draw the grid
+	controlContext.restore();	
+}
+提示：save()方法会将当前绘图环境压入堆栈顶部，对应的restore()方法会从堆栈顶部弹出一组状态信息，并据此恢复当前绘图环境的各状态。
+见【2、save()和restore()方法解释.png】
+
+
+1.3 程序清单的规范格式
+见【0、规范格式.html】
+
+
+1.4 开始学习HTML5
+1.4.1规范
+1.4.2浏览器
+1.4.3控制台与调试器 console.profile()
+1.4.4性能
+帮助调试的三个工具
+1）性能分析器 profiler
+2）时间轴工具 TimeLine
+3）jsPerf
+前两个直接由浏览器提供，3则是一个网站可以在此创建性能测试
+
+
+1.5 基本的绘制操作
+见【3、时钟程序.html】
+Canvas可以让开发者先创建不可见的路径，再用stroke()来描绘路径边缘，或调用fill()来对路径内部填充。
+可以调用beginPath()方法来开始定义一段新路径。
+****fillText的基准点在文字矩形的左下角
+****var textWidth=context.measureText(i).width; 可以得到这个绘画出来的字的宽度 高度就是字体的npx的n啊你傻逼啊
+
+1.6 事件处理
+1.6.1 鼠标事件
+增加事件监听的方法：
+1）canvas.onmousedown=function(e){
+	//react on the event
+}
+2）canvas.addEventListener("mousedown",function(e){
+	//react on the event
+})
+注册多个监听器使用第二种方法
+
+
+将鼠标坐标转换为Canvas坐标
+浏览器通过事件对象传递给监听器的鼠标坐标，是窗口坐标（window coordinate），而不是相对于canvas自身的坐标。
+转换函数见【4、windowToCanvas.html】
+****得到canvas在window中的边界矩形 var boundingRect=canvas.getBoundingClientRect();
+
+1.6.2 键盘事件
+浏览器按下某个键时，浏览器会生成键盘事件，这些事件发生在当前focus的HTML元素上。
+假如没有元素有交点事件的发生地将会移至window和document上。
+canvas是不可获取焦点元素，所以不能在canvas上新增键盘监听事件。所以应该在window或document上增加键盘事件。
+****关于onkeydown(1) onkeypress(2) onkeyup(3) 点击一下时显示123
+****长按时显示121212………… 放开按键时显示3
+****浏览器在产生可打印字符的时候才会触发keypress对象
+
+想弄清按的是哪个键的方法：
+1）keydown和keyup事件时，看事件对象的keyCode属性的值。//e.keycode
+一般来说，如果是可打印的字符，属性值就是其ascii码。
+bit.ly/o3bIL2 //反正是跟按键有关的网站
+键盘事件的事件对象包含下述布尔属性：
+altKey
+ctrlKey
+metaKey
+shiftKey
+由于浏览器只会在产生可打印字符串的时候才触发keypress事件，所以在处理该事件的时候可以使用如下方法。
+window.onkeypress=function(e){
+	var key=String.fromCharCode(e.which);
+}
+
+1.6.3 触摸事件
+
+
+1.7 绘制表面的保存与恢复
+canvas元素是采用立即模式绘图系统（immediate-mode）意思就是它会立刻将你所制定的内容绘制在canvas上，然后它就会立即忘记刚才绘制的内容。
+这表示canvas不会保存绘制的图形对象列表。
+某些绘图系统如SVG则会维护一份所绘图形对象的列表，这些绘图系统叫做保留模式绘图系统（retained-mode）
+
+下面演示如何使用getImageData()和putImageData()方法来保存和恢复绘图表面绘制辅助线
+见【6、保存和恢复绘图表面绘制辅助线.html】
+
+
+1.8 Canvas中使用HTML元素
+绝对多数情况，我们都会将canvas元素与其他HTML控件结合起来使用。以便用户输入数值来控制应用程序。
+不能将元素嵌入到canvas元素中。任何放入canvas元素主体部分的东西，只有在浏览器不支持canvas元素时才会显示。
+所以html控件必须放在canvas元素之外。
+但是可以用css将这些控件放置在canvas之上。
+下面【7、canvas中显示html控件.html】演示canvas中显示html控件 其中浮在canvas之上的div叫做玻璃窗格（glass pane）
+将玻璃窗格放置在canvas之上三种方法：
+1）canvas使用相对定位，玻璃窗格使用绝对定位。
+2）两个元素都相对或绝对定位，把玻璃窗格的div放置在canvas元素后方。
+3）设置z-index
+
+
+不可见的HTML元素
+用户拖动鼠标时动态的修改div元素的大小
+本例采用一种名为橡皮筋式的选取技术（rubberbanding）让用户在canvas中选择某个区域。
+选定图像的某一部分时，应用程序会将所选的这部分放大。
+见【8、橡皮筋式选取框.html】
+
+1.9 打印Canvas的内容
+Canvas元素不能右击保存到磁盘。可以使用canvas.toDataUrl()方法。
+该方法返回的引用指向了某个给定canvas元素的数据地址（就是刚才canvas的截图地址）。接下来可以将img元素的src属性设置为这个数据地址。
+见【9、使用toDataUrl()打印canvas的内容.html】
+核心算法 按钮会不停的切换canvas和img
+核心代码   var dataUrl=canvas.toDataURL(); //刚才canvas的截图地址
+           img.src=dataUrl;
+
+1.10 离屏Canvas （就是我有一个canvas但是不在屏幕显示）
+离屏Canvas offscreen 也叫缓冲canvas或幕后canvas
+离屏Canvas的用途：
+1）把背景存储在离屏canvas中并将离屏canvas的某一部分复制到屏幕上，来提高程序性能。
+2）像时钟程序一样 将显示方式从canvas切换成图像。
+见【10、以图像方式显示时钟.html】
+核心算法 就是canvas看不见 img每秒显示canvas转的图片
+
+1.11 基础数学知识
+180度=3.14弧度
+1弧度=3.14/180度
+1度=180/3.14弧度
+
+关于求每帧移动的像素数的总结：
+像素/帧=X*Y/1000
+X=毫秒/帧表示的帧速率 X也等于1000/FPS  FPS就是每秒多少帧
+Y=像素/秒
+****似乎每帧移动的像素数是做游戏需要的关键数据
+
