@@ -32,6 +32,24 @@
         var canvas = document.getElementById('canvas');
         var ctx = canvas.getContext('2d');//d必须小写
 
+
+        var rectHeight = 100;
+        var rectWidth = 100;
+
+//      将矩形画在屏幕正中间的写法1
+//        ctx.strokeRect(
+//                canvas.width / 2 - rectWidth / 2,
+//                canvas.height / 2 - rectHeight / 2,
+//                rectWidth, rectHeight
+//        )
+
+//      将矩形画在屏幕正中间的写法2
+//        translate(x,y)相当于重新定位了绘画 0 0 点
+        ctx.translate(canvas.width / 2 - rectWidth / 2,
+                canvas.height / 2 - rectHeight / 2)
+        ctx.strokeRect(0, 0, rectWidth, rectHeight);
+
+
     }
 </script>
 </body>

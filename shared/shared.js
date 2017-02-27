@@ -1,21 +1,21 @@
-//·µ»ØÊó±êÔÚcanvasµÄ×ø±êÖµ...
+//è¿”å›é¼ æ ‡åœ¨canvasçš„åæ ‡å€¼...
 function windowToCanvas(canvas, clientX, clientY) {
     var boundingRect = canvas.getBoundingClientRect();
     return {
-        //Êó±êµÄx-boundingRectµÄx
-        x: (clientX - boundingRect.left) / (boundingRect.width / canvas.width), //boundingRect.width/canvas.width¾ÍÊÇ·Å´óµÄ±¶Êı
+        //é¼ æ ‡çš„x-boundingRectçš„x
+        x: (clientX - boundingRect.left) / (boundingRect.width / canvas.width), //boundingRect.width/canvas.widthå°±æ˜¯æ”¾å¤§çš„å€æ•°
         y: (clientY - boundingRect.top) / (boundingRect.height / canvas.height)
     }
 
 }
 
-//¸ù¾İ½Ç¶È·µ»Ø»¡¶È...
+//æ ¹æ®è§’åº¦è¿”å›å¼§åº¦...
 function degreeToRad(degree) {
     var rad = degree * Math.PI / 180;
     return rad;
 }
 
-//»­Íø¸ñ
+//ç”»ç½‘æ ¼
 function drawSolidGrid(ctx, step) {
     ctx.save();
     ctx.strokeStyle = 'lightgray';
@@ -36,17 +36,19 @@ function drawSolidGrid(ctx, step) {
 }
 
 
-//±£´æºÍ»Ö¸´»æ»­±íÃæ
+//ä¿å­˜å’Œæ¢å¤ç»˜ç”»è¡¨é¢
 function saveDrawingSurface(canvas, ctx) {
     drawingSurfaceImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 }
 
 function restoreDrawingSurface(ctx) {
-    ctx.putImageData(drawingSurfaceImageData, 0, 0);
+    if(drawingSurfaceImageData){
+        ctx.putImageData(drawingSurfaceImageData, 0, 0);
+    }
 }
 
 
-//»­¸¨ÖúÏßxy
+//ç”»è¾…åŠ©çº¿xy
 function drawGuidewires(canvas, ctx, x, y) {
     ctx.save();
     ctx.strokeStyle = 'rgba(0,0,230,0.4)';

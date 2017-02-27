@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+
+        }
+
+        body {
+            background: #ddd;
+        }
+
+        #canvas {
+            margin: 10px;
+            background: #fff;
+            border: thin inset #aaa;
+        }
+
+        #controllers {
+            margin: 10px;
+        }
+    </style>
+
+</head>
+<body>
+<div id='controllers'>
+    Stroke color: <select id='strokeStyleSelect'>
+    <option value='red'>red</option>
+    <option value='green'>green</option>
+    <option value='blue'>blue</option>
+</select>
+
+    Fill color: <select id='fillStyleSelect'>
+    <option value='red'>red</option>
+    <option value='green'>green</option>
+    <option value='blue'>blue</option>
+</select>
+
+    Sides: <select id='sidesSelect'>
+    <option value=4>4</option>
+    <option value=5 selected>5</option>
+    <option value=6>6</option>
+    <option value=7>7</option>
+    <option value=8>8</option>
+    <option value=9>9</option>
+    <option value=10>10</option>
+    <option value=12>12</option>
+    <option value=20>20</option>
+</select>
+
+
+    Start angle: <select id='startAngleSelect'>
+    <option value=0 select>0</option>
+    <option value=22.5>22.5</option>
+    <option value=45>45</option>
+    <option value=67.5>67.5</option>
+    <option value=90>90</option>
+</select>
+
+    Fill <input id='fillCheckbox' type='checkbox'/>
+    <br/>
+    <input id='eraseAllButton' type='button' value='Erase all'/>
+    <br/>
+    Edit: <input type='checkbox' id='editCheckbox'/>
+</div>
+
+<canvas id='canvas' width='600' height='400'>
+    Canvas not supported!
+</canvas>
+<script src="../shared/shared.js"></script>
+<script>
+    onload = function () {
+        var canvas = document.getElementById('canvas');
+        var ctx = canvas.getContext('2d');//d必须小写
+
+        //init...
+        drawSolidGrid(ctx, 10);
+
+        //最关键的维护列表...
+        var polygons = [];
+        window.polygons = polygons;
+
+        //多边形对象...
+        function Polygon(json) {
+            this.fillStyle = json.fillStyle;
+            this.strokeStyle = json.strokeStyle;
+            this.filled = json.filled;
+            this.radius = json.radius;
+            this.sides = json.sides;
+            this.startAngle = json.startAngle;
+            this.centerX = json.centerX;
+            this.centerY = json.centerY;
+        };
+        Polygon.prototype = {
+            //这个函数传入中心点和半径和边数和起始角度 返回多边形的每一个点的坐标
+            getPoints: function () {
+                var that = this;
+
+                var points = [];//返回的多边形每个点的坐标
+                var angle = degreeToRad(this.startAngle) || 0;
+
+
+                for (var i = 1; i <= this.sides; i++) {
+                    var x = that.centerX + that.radius * Math.sin(angle);
+                    var y = that.centerY - that.radius * Math.cos(angle);
+                    points.push({'x': x, 'y': y})
+                    angle += degreeToRad(360 / that.sides);
+                }
+                return points;
+            },
+
+            //这个函数画出线段 会调用上面的函数作为子函数
+            createPath: function () {
+                var points = this.getPoints();
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                for (var i = 1; i < this.sides; i++) {
+                    ctx.lineTo(points[i].x, points[i].y);
+                }
+                ctx.closePath();
+            },
+
+            stroke: function () {
+                ctx.save();
+                this.createPath();
+                ctx.strokeStyle = this.strokeStyle;
+                ctx.stroke();
+                ctx.restore();
+            },
+
+            fill: function () {
+                ctx.save();
+                this.createPath();
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 2;
+                ctx.shadowBlur = 4;
+                ctx.fillStyle = this.fillStyle;
+                ctx.fill();
+                ctx.restore();
+            },
+
+            //显然是为了拖动
+            move: function (x, y) {
+                this.centerX = x;
+                this.centerY = y;
+            },
+
+            //自己加的render
+            render: function () {
+                this.stroke();
+                if (this.filled) {
+                    this.fill();
+                }
+            }
+        };
+
+        //dom...
+        var eraseAllButton = document.getElementById('eraseAllButton');
+        var strokeStyleSelect = document.getElementById('strokeStyleSelect');
+        var startAngleSelect = document.getElementById('startAngleSelect');
+        var fillStyleSelect = document.getElementById('fillStyleSelect');
+        var fillCheckbox = document.getElementById('fillCheckbox');
+        var editCheckbox = document.getElementById('editCheckbox');
+        var sidesSelect = document.getElementById('sidesSelect');
+
+        //绘画相关...
+        var mouseDown = {x: 0, y: 0};
+        var mouseCur = {x: 0, y: 0};
+        var ifDragging = false;
+        var creatingPolygon = null;
+        var editingPolygon = null;
+
+
+        canvas.onmousedown = function (e) {
+            e.preventDefault();
+
+            //记录鼠标相对于canvas的位置
+            var loc = windowToCanvas(canvas, e.clientX, e.clientY);
+            mouseDown.x = loc.x;
+            mouseDown.y = loc.y;
+
+
+            //点下去的时候如果是编辑状态 判断是否点中多边形...
+            if (editCheckbox.checked) {
+                editingPolygon = null;
+
+                polygons.forEach(function (e, i, array) {
+                    //创建一条路径,判断鼠标点击下的点是否在这个路径里
+                    e.createPath();
+                    if (ctx.isPointInPath(loc.x, loc.y)) {
+                        //获得编辑图案的引用......
+                        editingPolygon = e;
+                        //获得编辑图案的圆心......
+//                        draggingOriX = draggingPolygon.centerX;
+//                        draggingOriY = draggingPolygon.centerY;
+                    }
+                })
+
+                if (editingPolygon) {
+
+                } else {
+                    //如果在编辑模式 点击又没选到 说明当前旋转的圆需要消失 恢复到之前的状态...
+                    restoreDrawingSurface(ctx);
+                }
+            }
+            else {
+                ifDragging = true;
+                //保存表面用于恢复
+                saveDrawingSurface(canvas, ctx);
+            }
+
+        }
+
+
+        window.onmousemove = function (e) {
+            e.preventDefault();
+
+            //正在拖动且不是编辑模式才能画
+            if (ifDragging) {
+                if (!editCheckbox.checked) {
+                    var loc = windowToCanvas(canvas, e.clientX, e.clientY);
+                    mouseCur.x = loc.x;
+                    mouseCur.y = loc.y;
+                    var dx = mouseCur.x - mouseDown.x;
+                    var dy = mouseCur.y - mouseDown.y;
+
+//                    一边恢复拖动前的样子 一边画
+                    restoreDrawingSurface(ctx);
+
+                    //鼠标只要在动每次都创建一个新的
+                    creatingPolygon = new Polygon({
+                        fillStyle: fillStyleSelect.value,
+                        strokeStyle: strokeStyleSelect.value,
+                        filled: fillCheckbox.checked,
+                        radius: Math.abs(Math.sqrt(dx * dx + dy * dy)),
+                        sides: sidesSelect.value,
+                        startAngle: startAngleSelect.value,
+                        centerX: mouseDown.x,
+                        centerY: mouseDown.y,
+                    });
+                    creatingPolygon.render();
+                }
+            }
+
+
+            //如果有正在编辑的图案...
+            if (editingPolygon) {
+                var loc = windowToCanvas(canvas, e.clientX, e.clientY);
+                mouseCur.x = loc.x;
+                mouseCur.y = loc.y;
+
+                restoreDrawingSurface(ctx);
+
+                var x1 = editingPolygon.centerX;
+                var y1 = editingPolygon.centerY;
+                var x2 = mouseCur.x;
+                var y2 = mouseCur.y;
+                var dx = x2 - x1;
+                var dy = y2 - y1;
+                var angle = Math.atan2(dy, dx);
+
+                console.log(angle)
+
+                //话圆就是画案例中的表盘的意思
+                drawCircle(editingPolygon.centerX, editingPolygon.centerY, editingPolygon.radius, editingPolygon.strokeStyle);
+                function drawCircle(x, y, r, color) {
+                    ctx.save();
+                    ctx.beginPath()
+                    ctx.arc(x, y, r, 0, 2 * Math.PI, false);
+                    ctx.strokeStyle = color;
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                //这里画旋转中的多边形 核心代码！！！
+                drawPolygon(editingPolygon, (angle));
+                function drawPolygon(poly, angle) {
+                    var tx = poly.centerX;
+                    var ty = poly.centerY;
+
+                    ctx.save();
+                    ctx.translate(tx, ty);//约等于把旋转中心放在多边形的圆心处...
+                    ctx.rotate(angle);
+
+                    //再把多边形的圆心 设在0处...
+                    poly.centerX = 0;
+                    poly.centerY = 0;
+
+                    poly.render();
+                    ctx.restore();
+                    poly.centerX = tx;
+                    poly.centerY = ty;
+
+                }
+            }
+        }
+
+        window.onmouseup = function (e) {
+            e.preventDefault();
+            if (ifDragging) {
+                if (!editCheckbox.checked) {
+                    mouseDown = {x: 0, y: 0};
+                    mouseCur = {x: 0, y: 0};
+                    ifDragging = false;
+                    polygons.push(creatingPolygon);
+                    saveDrawingSurface(canvas, ctx);
+
+                }
+            }
+            if (editingPolygon) {
+                //鼠标抬起来的时候.... ifDragging不等于false 会在 window.onmousemove进ifDragging分支
+                ifDragging = false;
+
+                //不恢复好像也行...
+                restoreDrawingSurface(ctx);
+            }
+        }
+    }
+</script>
+</body>
+</html>

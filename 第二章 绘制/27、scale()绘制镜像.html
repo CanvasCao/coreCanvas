@@ -7,7 +7,6 @@
         * {
             padding: 0;
             margin: 0;
-
         }
 
         body {
@@ -23,14 +22,37 @@
 
 </head>
 <body>
+
 <canvas id='canvas' width='600' height='300'>
     Canvas not supported!
 </canvas>
+
 <script src="../shared/shared.js"></script>
 <script>
     onload = function () {
         var canvas = document.getElementById('canvas');
         var ctx = canvas.getContext('2d');//d必须小写
+
+        drawSolidGrid(ctx, 10);
+
+//        drawSth();
+        ctx.save()
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        drawSth();
+        ctx.restore()
+
+
+        drawSth();
+
+
+        function drawSth() {
+            ctx.beginPath();
+            ctx.moveTo(10, 10)
+            ctx.lineTo(100, 100)
+            ctx.stroke();
+        }
+
 
     }
 </script>

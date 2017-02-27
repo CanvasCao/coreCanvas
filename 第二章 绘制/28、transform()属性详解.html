@@ -32,6 +32,17 @@
         var canvas = document.getElementById('canvas');
         var ctx = canvas.getContext('2d');//d必须小写
 
+
+        //简单来说 之前的scale rotate translate 三个要分开写才能完成的效果现在只要一个setTransform方法
+        //诸如错切 的复杂效果无法通过scale rotate translate来实现
+        //        ctx.setTransform(a,b,c,d,e,f);
+        //
+        //        a	水平缩放绘图
+        //        b	水平倾斜绘图
+        //        c	垂直倾斜绘图
+        //        d	垂直缩放绘图
+        //        e	水平移动绘图
+        //        f	垂直移动绘图
     }
 </script>
 </body>
